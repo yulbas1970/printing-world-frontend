@@ -1,0 +1,56 @@
+🚨 SI NO SE ABRE AUTOMÁTICAMENTE - INSTRUCCIONES MANUALES
+=============================================================
+
+OPCIÓN 1: Usar inicio-super-automatico.bat
+-------------------------------------------
+1. Doble clic en "inicio-super-automatico.bat"
+2. Esperar 10 segundos
+3. Si no se abre, ve a: http://localhost:5173
+
+OPCIÓN 2: Apertura manual completa
+-----------------------------------
+1. Abrir "Símbolo del sistema" (cmd)
+2. Navegar a la carpeta del proyecto:
+   cd "C:\ruta\donde\extrajiste\printing-world-clean"
+3. Instalar dependencias:
+   npm install
+4. Iniciar servidor:
+   npm run dev
+5. Abrir navegador manualmente:
+   http://localhost:5173
+
+OPCIÓN 3: Verificar que funciona online
+----------------------------------------
+Demo online: https://wl7o0s9svn.space.minimax.io
+(Busca el badge verde "✓ FIXED")
+
+PROBLEMAS COMUNES Y SOLUCIONES:
+================================
+
+❌ "No se reconoce node"
+✅ Instalar Node.js desde: https://nodejs.org
+
+❌ Windows bloquea el archivo
+✅ Clic derecho → "Ejecutar como administrador"
+
+❌ Antivirus bloquea
+✅ Agregar carpeta a excepciones del antivirus
+
+❌ No se abre el navegador
+✅ Abrir manualmente: http://localhost:5173
+
+❌ Error de permisos
+✅ Ejecutar cmd como administrador
+
+VERIFICACIÓN DE ÉXITO:
+======================
+✅ Logo dice "Printing World" (no "Mundo de la impresión")
+✅ Ves badge verde "✓ FIXED" al lado del logo
+✅ Selector de idiomas en esquina superior derecha
+✅ URL es localhost:5173
+
+CONTACTO:
+=========
+Si nada funciona, el demo online siempre está disponible:
+https://wl7o0s9svn.space.minimax.io
+Password admin: printingworld2024
