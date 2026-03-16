@@ -126,7 +126,7 @@ const AdminPage = () => {
   };
 
   if (!isAdminMode) {
-    return <AdminLoginForm onLoginSuccess={handleLoginSuccess} />;
+    return <AdminLoginForm onLoginSuccess={handleLoginSuccess} fetchCompanySettings={fetchCompanySettings} fetchProjectFiles={fetchProjectFiles} />;
   }
 
   return (
@@ -171,7 +171,7 @@ const AdminPage = () => {
             </Link>
           </div>
           <div className="space-y-8">
-            <CompanySettingsSection fetchCompanySettings={fetchCompanySettings} />
+            <CompanySettingsSection />
             <BackupSection />
           </div>
         </div>

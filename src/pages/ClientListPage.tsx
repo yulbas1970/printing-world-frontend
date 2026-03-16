@@ -6,7 +6,7 @@ import ClientForm from '../components/admin/ClientForm'; // Import ClientForm
 
 
 
-interface Client {
+export interface Client {
   id: number;
   name: string;
   email: string;

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, User, Calendar, Image as ImageIcon, Tag, DollarSign, FileText, Edit, X, Save, FileDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Project } from './ProjectListPage';
+import { Client } from './ClientListPage';
+import { ProjectImage } from '../components/admin/ProjectImageManager';
 
 // ... (interfaces remain the same)
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { X, Upload, Trash2, Image as ImageIcon } from 'lucide-react'; // Renamed Image to ImageIcon to avoid conflict
 
-interface ProjectImage {
+export interface ProjectImage {
   id: number;
   projectId: number;
   imageUrl: string;

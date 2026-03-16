@@ -6,7 +6,7 @@ import ProjectForm from '../components/admin/ProjectForm';
 import ProjectImageManager from '../components/admin/ProjectImageManager'; // Import ProjectImageManager
 // import ProjectImageManager from '../components/admin/ProjectImageManager'; // Will be imported later
 
-interface Project {
+export interface Project {
   id: number;
   clientId: number;
   projectName: string;
