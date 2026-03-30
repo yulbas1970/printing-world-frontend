@@ -142,16 +142,16 @@ const GaleriaPage = () => {
               >
                 {mural.mimeType && mural.mimeType.startsWith('video/') ? (
                   <video
-                    src={`/images/${mural.imageUrl}'}
+                    src={"/images/"+mural.imageUrl}
                     // Usar la URL completa
                     controls
                     className="w-full h-64 object-cover"
                   >
-                    Your browser does not support the video tag.
+                   Your browser does not support the video tag  
                   </video>
                 ) : (
                   <img 
-                    src={`/images/${mural.imageUrl}`} // Usar la URL completa
+                   src={"/images/"+mural.imageUrl} // Usar la URL completa
                     alt={mural.title || 'Mural'}
                     className="w-full h-64 object-cover"
                   />
