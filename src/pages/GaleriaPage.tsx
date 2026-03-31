@@ -16,16 +16,20 @@ const GaleriaPage = () => {
     en: { galleryTitle: "Our Work Gallery", gallerySubtitle: "Explore a selection of our best projects.", livingRoom: "Living Room", kitchen: "Kitchen", kids: "Kids Room", bathroom: "Bathroom", hallway: "Hallway", video: "Video", general: "General", others: "Others" },
     es: { galleryTitle: "Galería de Trabajos", gallerySubtitle: "Explora una selección de nuestros mejores proyectos.", livingRoom: "Salón", kitchen: "Cocina", kids: "Infantil", bathroom: "Baño", hallway: "Pasillo", video: "Video", general: "General", others: "Otros" }
   };
+  const muralsDemo = [
+  { id: 1, imageUrl: "mural-abstracto-1.jpg", title: "Abstracto", category: "general", mimeType: "image/jpeg" },
+  { id: 2, imageUrl: "mural-naturaleza-1.jpg", title: "Naturaleza", category: "salones", mimeType: "image/jpeg" },
+  { id: 3, imageUrl: "mural-urbano-1.jpg", title: "Urbano", category: "otros", mimeType: "image/jpeg" },
+  { id: 4, imageUrl: "mural-minimalista-1.jpg", title: "Minimalista", category: "cocinas", mimeType: "image/jpeg" },
+  { id: 5, imageUrl: "mural-geometrico-1.webp", title: "Geométrico", category: "baños", mimeType: "image/webp" },
+  { id: 6, imageUrl: "vertical-printing.webp", title: "Video demo", category: "video", mimeType: "video/webm" }
+];
   const t = (key: string) => translations[language as keyof typeof translations][key as keyof typeof translations.en] || key;
 
   const fetchMurals = async () => {
     try {
-      const projectId = 1; // Placeholder
-      const response = await fetch(`${API_URL}/api/projects/${projectId}/images`); // Usar la URL completa
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      console.log('DEBUG FRONTEND (GaleriaPage): Raw data from API:', data);
-      
+     const data = muralsDemo;
+console.log('DEBUG FRONTEND (GaleriaPage): Raw data from DEMO:', data);
       const organizedMurals: {[key: string]: any[]} = {}; // Initialize as empty object
 
       data.forEach((mural: any) => {
