@@ -9,15 +9,11 @@ interface AdminLoginFormProps {
 }
 
 const AdminLoginForm: React.FC<AdminLoginFormProps> = ({
-  onLoginSuccess,
-  fetchCompanySettings,
-  fetchProjectFiles
+  onLoginSuccess
 }) => {
-
   const [adminPassword, setAdminPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // 🔥 LOGIN TEMPORAL (SIN API)
   const handleAdminLogin = async () => {
     const PASSWORD = 'admin123';
 
@@ -27,22 +23,17 @@ const AdminLoginForm: React.FC<AdminLoginFormProps> = ({
       return;
     }
 
-    // Simulamos login correcto
     localStorage.setItem('accessToken', 'local-admin-token');
     localStorage.setItem('userRole', 'admin');
 
     setAdminPassword('');
-    toast.success('Admin login successful!');
-
+    toast.success('Login correcto');
     onLoginSuccess();
-    fetchCompanySettings();
-    fetchProjectFiles();
   };
 
   return (
     <div className="max-w-md mx-auto">
       <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-8 border border-white/30">
-
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Home className="w-8 h-8 text-black" />
@@ -56,14 +47,13 @@ const AdminLoginForm: React.FC<AdminLoginFormProps> = ({
         </div>
 
         <div className="space-y-4">
-
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
               placeholder="Contraseña de administrador"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
+              onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
               className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 pr-10"
               autoFocus
             />
@@ -83,7 +73,6 @@ const AdminLoginForm: React.FC<AdminLoginFormProps> = ({
           >
             Iniciar Sesión
           </button>
-
         </div>
       </div>
     </div>
