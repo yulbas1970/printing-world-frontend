@@ -44,6 +44,7 @@
     "cmdk": "1.0.0",
     "date-fns": "^3.0.0",
     "embla-carousel-react": "^8.5.2",
+    "firebase": "^12.12.1",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
     "konva": "8.3.1",
