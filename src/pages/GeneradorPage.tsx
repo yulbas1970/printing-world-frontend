@@ -131,7 +131,7 @@ const GeneradorPage = () => {
     const fetchMurals = async () => {
       try {
         console.error('GeneradorPage: Attempting fetch request.');
-        const response = await fetch('http://localhost:5000/projects/1/images');
+        const response = await fetch('${API_URL}/projects/1/images');
         console.log('GeneradorPage: Fetch response received.', response);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -141,7 +141,7 @@ const GeneradorPage = () => {
         // Prepend backend URL to image paths
         const muralsWithFullUrls = data.map((mural: any) => ({
           ...mural,
-          imageUrl: `http://localhost:5000${mural.imageUrl}`
+          imageUrl: `${API_URL}${mural.imageUrl}`
         }));
         setGalleryMurals(muralsWithFullUrls);
         console.log('GeneradorPage: Murals fetched and processed successfully.', muralsWithFullUrls);

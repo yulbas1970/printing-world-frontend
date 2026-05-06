@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; // Usar variable de entorno o valor por defecto
+const API_URL = import.meta.env.VITE_API_URL || '${API_URL}'; // Usar variable de entorno o valor por defecto
 
 const VideosPage = () => {
   const [demoVideos, setDemoVideos] = useState<Array<{src: string, title: string, description: string}>>([]);

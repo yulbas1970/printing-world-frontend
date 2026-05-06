@@ -30,7 +30,7 @@ const VideoManager: React.FC<VideoManagerProps> = ({ backendVideos, fetchProject
 
     try {
       const projectId = 1; // Hardcoding to general project ID
-      const response = await fetch(`http://localhost:5000/projects/${projectId}/images`, {
+      const response = await fetch(`${API_URL}/projects/${projectId}/images`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -69,7 +69,7 @@ const VideoManager: React.FC<VideoManagerProps> = ({ backendVideos, fetchProject
     if (videoToDelete === null) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/images/${videoToDelete}`, {
+      const response = await fetch(`${API_URL}/images/${videoToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,

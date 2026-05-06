@@ -19,7 +19,7 @@ const ContactoPage = () => {
 
   const fetchCompanySettings = async () => {
     try {
-      const response = await fetch('http://localhost:5000/settings');
+      const response = await fetch('${API_URL}/settings');
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       console.log('Raw data received from API:', data); // New debug log

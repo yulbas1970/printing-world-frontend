@@ -95,11 +95,11 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ projectToEdit, onSave, onCanc
       let method = '';
 
       if (projectToEdit) {
-        url = `http://localhost:5000/projects/${projectToEdit.id}`;
+        url = `${API_URL}/projects/${projectToEdit.id}`;
         method = 'PUT';
       } else {
         // For new projects, clientId is part of the URL in the backend
-        url = `http://localhost:5000/clients/${clientId}/projects`;
+        url = `${API_URL}/clients/${clientId}/projects`;
         method = 'POST';
       }
 

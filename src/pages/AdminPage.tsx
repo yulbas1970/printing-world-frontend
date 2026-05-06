@@ -52,7 +52,7 @@ const AdminPage = () => {
         throw new Error("Authentication token not found.");
       }
       
-      const response = await fetch('http://localhost:5000/projects/1/images', {
+      const response = await fetch('${API_URL}/projects/1/images', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

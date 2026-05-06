@@ -10,7 +10,7 @@ const BackupSection: React.FC = () => {
     console.log('Backup initiated');
     setBackupStatus('generating');
     try {
-      const response = await fetch('http://localhost:5000/backup/full', {
+      const response = await fetch('${API_URL}/backup/full', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
@@ -23,8 +23,8 @@ const BackupSection: React.FC = () => {
       const data = await response.json();
       if (data.downloadUrl) {
         // Initiate download
-        window.open(`http://localhost:5000${data.downloadUrl}`, '_blank');
-        setBackupDownloadUrl(`http://localhost:5000${data.downloadUrl}`); // Store for display if needed
+        window.open(`${API_URL}${data.downloadUrl}`, '_blank');
+        setBackupDownloadUrl(`${API_URL}${data.downloadUrl}`); // Store for display if needed
         setBackupStatus('success');
         console.log('Backup generated successfully. Download initiated.');
       } else {

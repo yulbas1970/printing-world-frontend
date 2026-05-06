@@ -52,7 +52,7 @@ const ProjectDetailsPage: React.FC = () => {
     const toastId = toast.loading('Generando informe PDF...');
     const token = localStorage.getItem('accessToken');
     try {
-      const response = await fetch(`http://localhost:5000/reports/project/${projectId}/pdf`, {
+      const response = await fetch(`${API_URL}/reports/project/${projectId}/pdf`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

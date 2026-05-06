@@ -16,7 +16,7 @@ const CompanySettingsSection: React.FC = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/company', {
+      const response = await fetch('${API_URL}/api/company', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
       });
       if (!response.ok) throw new Error('Failed to fetch settings');
@@ -25,7 +25,7 @@ const CompanySettingsSection: React.FC = () => {
       setEditedSettings(data);
       if (data.logoUrl) {
         // Add a timestamp to bypass browser cache
-        setLogoPreview(`http://localhost:5000${data.logoUrl}?t=${new Date().getTime()}`);
+        setLogoPreview(`${API_URL}${data.logoUrl}?t=${new Date().getTime()}`);
       }
     } catch (error) {
       console.error('Error fetching company settings:', error);
@@ -44,7 +44,7 @@ const CompanySettingsSection: React.FC = () => {
   const handleSaveSettings = async () => {
     const toastId = toast.loading('Guardando configuración...');
     try {
-      const response = await fetch('http://localhost:5000/api/company', {
+      const response = await fetch('${API_URL}/api/company', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ const CompanySettingsSection: React.FC = () => {
     formData.append('logo', logoFile);
 
     try {
-      const response = await fetch('http://localhost:5000/api/company/logo', {
+      const response = await fetch('${API_URL}/api/company/logo', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
         body: formData,
@@ -98,7 +98,7 @@ const CompanySettingsSection: React.FC = () => {
       setLogoFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (result.logoUrl) {
-        setLogoPreview(`http://localhost:5000${result.logoUrl}?t=${new Date().getTime()}`);
+        setLogoPreview(`${API_URL}${result.logoUrl}?t=${new Date().getTime()}`);
       }
 
     } catch (error) {

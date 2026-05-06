@@ -41,7 +41,7 @@ function App() {
       const token = localStorage.getItem('accessToken');
       if (token) {
         try {
-          const response = await fetch('http://localhost:5000/verify-token', {
+          const response = await fetch('${API_URL}/verify-token', {
             headers: {
               'Authorization': `Bearer ${token}`
             }

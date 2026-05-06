@@ -46,7 +46,7 @@ const ProjectImageManager: React.FC<ProjectImageManagerProps> = ({ projectId, on
     setError(null);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`http://localhost:5000/projects/${projectId}/images`, {
+      const response = await fetch(`${API_URL}/projects/${projectId}/images`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -96,7 +96,7 @@ const ProjectImageManager: React.FC<ProjectImageManagerProps> = ({ projectId, on
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`http://localhost:5000/projects/${projectId}/images`, {
+      const response = await fetch(`${API_URL}/projects/${projectId}/images`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +134,7 @@ const ProjectImageManager: React.FC<ProjectImageManagerProps> = ({ projectId, on
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`http://localhost:5000/images/${imageToDelete}`, {
+      const response = await fetch(`${API_URL}/images/${imageToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -243,7 +243,7 @@ const ProjectImageManager: React.FC<ProjectImageManagerProps> = ({ projectId, on
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {images.map((image) => (
               <div key={image.id} className="relative group border border-white/20 rounded-lg overflow-hidden">
-                <img src={`http://localhost:5000${image.imageUrl}`} alt={image.title || 'Imagen de proyecto'} className="w-full h-32 object-cover" />
+                <img src={`${API_URL}${image.imageUrl}`} alt={image.title || 'Imagen de proyecto'} className="w-full h-32 object-cover" />
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleDeleteImageClick(image.id)}
