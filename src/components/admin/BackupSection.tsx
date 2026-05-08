@@ -10,7 +10,7 @@ const BackupSection: React.FC = () => {
     console.log('Backup initiated');
     setBackupStatus('generating');
     try {
-      const response = await fetch('${API_URL}/backup/full', {
+      const response = await fetch(`${API_URL}/backup/full`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
@@ -75,3 +75,4 @@ const BackupSection: React.FC = () => {
 };
 
 export default BackupSection;
+

@@ -64,7 +64,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientToEdit, onSave, onCancel 
     const token = localStorage.getItem('accessToken');
 
     try {
-      const url = clientToEdit ? `${API_URL}/clients/${clientToEdit.id}` : '${API_URL}/clients';
+      const url = clientToEdit ? `${API_URL}/clients/${clientToEdit.id}` : `${API_URL}/clients`;
       const method = clientToEdit ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -170,3 +170,4 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientToEdit, onSave, onCancel 
 };
 
 export default ClientForm;
+

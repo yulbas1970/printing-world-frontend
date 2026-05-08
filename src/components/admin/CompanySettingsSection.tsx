@@ -16,7 +16,7 @@ const CompanySettingsSection: React.FC = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('${API_URL}/api/company', {
+      const response = await fetch(`${API_URL}/api/company`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
       });
       if (!response.ok) throw new Error('Failed to fetch settings');
@@ -44,7 +44,7 @@ const CompanySettingsSection: React.FC = () => {
   const handleSaveSettings = async () => {
     const toastId = toast.loading('Guardando configuración...');
     try {
-      const response = await fetch('${API_URL}/api/company', {
+      const response = await fetch(`${API_URL}/api/company`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ const CompanySettingsSection: React.FC = () => {
     formData.append('logo', logoFile);
 
     try {
-      const response = await fetch('${API_URL}/api/company/logo', {
+      const response = await fetch(`${API_URL}/api/company/logo`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
         body: formData,
@@ -199,3 +199,4 @@ const CompanySettingsSection: React.FC = () => {
 };
 
 export default CompanySettingsSection;
+

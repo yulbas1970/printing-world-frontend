@@ -129,3 +129,4 @@ const GalleryUploadModal: React.FC<GalleryUploadModalProps> = ({
 };
 
 export default GalleryUploadModal;
+

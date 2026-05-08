@@ -292,3 +292,4 @@ const MuralManager: React.FC<MuralManagerProps> = () => {
 };
 
 export default MuralManager;
+

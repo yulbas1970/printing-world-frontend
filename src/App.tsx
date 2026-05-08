@@ -1,26 +1,39 @@
-import { Routes, Route, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import HomePage from './pages/HomePage'
-import AdminPage from './pages/AdminPage'
-import ClientListPage from './pages/ClientListPage' // Added import
-import ProjectListPage from './pages/ProjectListPage' // New import
-import ProjectDetailsPage from './pages/ProjectDetailsPage' // New import
-import GaleriaPage from './pages/GaleriaPage'
-import VideosPage from './pages/VideosPage'
-import ServiciosPage from './pages/ServiciosPage'
-import GeneradorPage from './pages/GeneradorPage'
-import ContactoPage from './pages/ContactoPage'
-import Header from './components/layout/Header'
-import { Toaster } from 'react-hot-toast'
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { API_URL } from './config/api';
 
-// Simple Footer component
+import HomePage from './pages/HomePage';
+import AdminPage from './pages/AdminPage';
+import ClientListPage from './pages/ClientListPage';
+import ProjectListPage from './pages/ProjectListPage';
+import ProjectDetailsPage from './pages/ProjectDetailsPage';
+import GaleriaPage from './pages/GaleriaPage';
+import VideosPage from './pages/VideosPage';
+import ServiciosPage from './pages/ServiciosPage';
+import GeneradorPage from './pages/GeneradorPage';
+import ContactoPage from './pages/ContactoPage';
+
+import Header from './components/layout/Header';
+import { Toaster } from 'react-hot-toast';
+
 const Footer = () => {
-  const [language] = useState(localStorage.getItem('printingworld-language') || 'es');
+  const [language] = useState(
+    localStorage.getItem('printingworld-language') || 'es'
+  );
+
   const translations = {
-    en: { footerText: "© 2024 Printing World. All rights reserved." },
-    es: { footerText: "© 2024 Printing World. Todos los derechos reservados." }
+    en: {
+      footerText: '© 2024 IMPRIMIENDO EL MUNDO IA. All rights reserved.',
+    },
+    es: {
+      footerText: '© 2024 IMPRIMIENDO EL MUNDO IA. Todos los derechos reservados.',
+    },
   };
-  const t = (key: string) => translations[language as keyof typeof translations][key as keyof typeof translations.en] || key;
+
+  const t = (key: string) =>
+    translations[language as keyof typeof translations][
+      key as keyof typeof translations.en
+    ] || key;
 
   return (
     <footer className="bg-black/40 py-12">
@@ -39,36 +52,37 @@ function App() {
   useEffect(() => {
     const verifyUserToken = async () => {
       const token = localStorage.getItem('accessToken');
-      if (token) {
-        try {
-          const response = await fetch('${API_URL}/verify-token', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          // If token is invalid/expired, the server responds with an error status (401, 403)
-          if (!response.ok) {
-            console.log('Session token is invalid, clearing session...');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('userRole'); // Also clear role if stored
-            window.location.reload(); // Reload the page to force a redirect to login
-          }
-        } catch (error) {
-          console.error('Error verifying token:', error);
-          // Also clear token on network error, as we can't verify it
+
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${API_URL}/verify-token`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('userRole');
           window.location.reload();
         }
+      } catch (error) {
+        console.error('Error verifying token:', error);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('userRole');
+        window.location.reload();
       }
     };
+
     verifyUserToken();
-  }, []); // The empty dependency array ensures this runs only once on app load
+  }, []);
 
   return (
     <div className="App">
       <Header />
       <Toaster position="bottom-right" />
+
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/servicios" element={<ServiciosPage />} />
@@ -79,11 +93,12 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/clients" element={<ClientListPage />} />
         <Route path="/admin/projects" element={<ProjectListPage />} />
-        <Route path="/admin/projects/:id" element={<ProjectDetailsPage />} /> {/* New route for ProjectDetailsPage */}
+        <Route path="/admin/projects/:id" element={<ProjectDetailsPage />} />
       </Routes>
+
       <Footer />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -223,3 +223,4 @@ const GaleriaPage = () => {
 };
 
 export default GaleriaPage;
+
