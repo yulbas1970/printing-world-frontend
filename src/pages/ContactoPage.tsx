@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import emailjs from '@emailjs/browser';
 import { Phone, Mail, MapPin } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 // This component displays the contact form and information.
 const ContactoPage = () => {

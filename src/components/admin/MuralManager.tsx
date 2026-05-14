@@ -3,57 +3,46 @@ import { Palette, Upload, Trash2, Edit, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { db } from '../../services/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { loadMurals, Mural, CategorizedMurals } from '../../utils/loadMurals'; // Importar loadMurals y las interfaces
 
 const CLOUD_NAME = 'dwptjttz8';
 const UPLOAD_PRESET = 'mural_upload';
 
-interface FirebaseMural {
-  id: string;
-  imageUrl: string;
-  cloudinaryPublicId?: string;
-  category: string;
-  title: string;
-  description: string;
-  createdAt: number;
-}
-
 interface MuralManagerProps {
-  galleryMurals?: any;
+  galleryMurals?: CategorizedMurals; // Usar CategorizedMurals
   fetchProjectFiles?: () => Promise<void>;
   showDeleteConfirm?: boolean;
   setShowDeleteConfirm?: (show: boolean) => void;
-  muralToDelete?: number | null;
-  setMuralToDelete?: (id: number | null) => void;
+  muralToDelete?: string | null; // Cambiado a string
+  setMuralToDelete?: (id: string | null) => void; // Cambiado a string
 }
 
-const MuralManager: React.FC<MuralManagerProps> = () => {
-  const [murals, setMurals] = useState<FirebaseMural[]>([]);
+const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => { // Recibir fetchProjectFiles como prop
+  const [murals, setMurals] = useState<Mural[]>([]); // Usar la interfaz Mural
   const [isGalleryEditMode, setIsGalleryEditMode] = useState(false);
   const [showGalleryUpload, setShowGalleryUpload] = useState(false);
   const [activeGalleryCategory, setActiveGalleryCategory] = useState('salones');
   const [selectedUploadCategory, setSelectedUploadCategory] = useState('salones');
-  const [muralToDelete, setMuralToDelete] = useState<FirebaseMural | null>(null);
+  const [muralToDelete, setMuralToDelete] = useState<Mural | null>(null); // Usar la interfaz Mural
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
   const galleryCategories = [
     { id: 'salones', name: 'Salones', icon: '🛋️' },
     { id: 'cocinas', name: 'Cocinas', icon: '🍽️' },
     { id: 'infantiles', name: 'Infantiles', icon: '🧸' },
-    { id: 'baños', name: 'Baños', icon: '🛁' },
+    { id: 'banos', name: 'Baños', icon: '🛁' }, // Corregido a 'banos'
     { id: 'pasillos', name: 'Pasillos', icon: '🚶' },
+    { id: 'general', name: 'General', icon: '🌐' }, // Añadido
   ];
 
-  const loadMurals = async () => {
+  const refreshMurals = async () => { // Renombrado para evitar conflicto con loadMurals
     try {
-      const q = query(collection(db, 'murales'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-
-      const data = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<FirebaseMural, 'id'>),
-      }));
-
-      setMurals(data);
+      const { categorizedMurals } = await loadMurals(); // Usar la función compartida
+      const allMurals = Object.values(categorizedMurals).flat();
+      setMurals(allMurals);
+      if (fetchProjectFiles) {
+        fetchProjectFiles(); // Actualizar también en AdminPage
+      }
     } catch (error) {
       console.error(error);
       toast.error('Error al cargar los murales');
@@ -61,7 +50,7 @@ const MuralManager: React.FC<MuralManagerProps> = () => {
   };
 
   useEffect(() => {
-    loadMurals();
+    refreshMurals();
   }, []);
 
   const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,7 +91,7 @@ const MuralManager: React.FC<MuralManagerProps> = () => {
       }
 
       setShowGalleryUpload(false);
-      await loadMurals();
+      await refreshMurals(); // Usar refreshMurals
 
       toast.success('Mural subido correctamente 🚀');
     } catch (error) {
@@ -119,7 +108,7 @@ const MuralManager: React.FC<MuralManagerProps> = () => {
 
       toast.success('Mural eliminado de la galería');
       setMuralToDelete(null);
-      await loadMurals();
+      await refreshMurals(); // Usar refreshMurals
     } catch (error) {
       console.error(error);
       toast.error(`Error al eliminar el mural: ${(error as Error).message}`);

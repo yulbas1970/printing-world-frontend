@@ -3,7 +3,7 @@ import { Home } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-import { API_URL } from '../config/api';
+import { API_URL } from '../config/api'; // Restaurar importación de API_URL
 
 import AdminLoginForm from '../components/admin/AdminLoginForm';
 import MuralManager from '../components/admin/MuralManager';
@@ -12,7 +12,7 @@ import BackupSection from '../components/admin/BackupSection';
 import CompanySettingsSection from '../components/admin/CompanySettingsSection';
 
 interface Mural {
-  id: number;
+  id: number; // Restaurar a number
   projectId: number;
   imageUrl: string;
   category: string;
@@ -25,7 +25,7 @@ interface CategorizedMurals {
 }
 
 interface Video {
-  id: number;
+  id: number; // Restaurar a number
   src: string;
   title: string;
   description: string;
@@ -39,7 +39,7 @@ const AdminPage = () => {
   const [videos, setVideos] = useState<Video[]>([]);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [muralToDelete, setMuralToDelete] = useState<number | null>(null);
+  const [muralToDelete, setMuralToDelete] = useState<number | null>(null); // Restaurar a number | null
 
   const navigate = useNavigate();
 
@@ -59,14 +59,24 @@ const AdminPage = () => {
         throw new Error('Authentication token not found.');
       }
 
-      const response = await fetch(`${API_URL}/projects/1/images`, {
+      const url = `${API_URL}/api/projects/1/images`; // Asegurarse de que la URL comience con /api
+      console.log('fetchProjectFiles URL:', url); // Log temporal
+
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch project files');
+        const errorText = await response.text(); // Leer el cuerpo de la respuesta como texto
+        throw new Error(`Failed to fetch project files: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const errorText = await response.text();
+        throw new Error(`Expected JSON response, but received ${contentType || 'no content type'}: ${errorText}`);
       }
 
       const data: Mural[] = await response.json();

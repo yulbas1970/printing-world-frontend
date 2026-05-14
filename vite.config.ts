@@ -15,6 +15,10 @@ export default defineConfig({
         target: 'http://localhost:5000', // Your backend server
         changeOrigin: true,
       },
+      '/uploads': { // Añadido proxy para /uploads
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
   },
 })
