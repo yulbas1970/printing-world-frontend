@@ -1,18 +1,15 @@
-import { db } from '../services/firebase'; // Importar db de Firebase
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-
-interface Mural {
-  id: string; // Firebase ID es string
+export interface Mural {
+  id: string;
   imageUrl: string;
   category: string;
   title?: string;
   description?: string;
   mimeType?: string;
-  cloudinaryPublicId?: string; // Añadir si es relevante
-  createdAt?: number; // Añadir si es relevante
+  cloudinaryPublicId?: string;
+  createdAt?: number;
 }
 
-interface CategorizedMurals {
+export interface CategorizedMurals {
   [key: string]: Mural[];
 }
 
@@ -21,11 +18,13 @@ interface LoadMuralsResult {
   videoFiles: Mural[];
 }
 
-// Función para normalizar categorías
 const normalizeCategory = (category: string | undefined): string => {
-  if (!category) return 'uncategorized';
-  let normalized = category.toLowerCase();
-  normalized = normalized.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Quitar tildes
+  if (!category) return 'general';
+
+  const normalized = category
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 
   switch (normalized) {
     case 'salon':
@@ -52,46 +51,83 @@ const normalizeCategory = (category: string | undefined): string => {
       return 'pasillos';
     case 'general':
       return 'general';
+    case 'video':
+    case 'videos':
+      return 'video';
     default:
-      return normalized;
+      return 'general';
   }
 };
 
-export const loadMurals = async (): Promise<LoadMuralsResult> => { // Eliminar isAuthenticated
-  try {
-    console.log('Loading murals from Firebase...');
+const normalizeImageUrl = (url: string | undefined): string => {
+  if (!url) return '';
 
-    const q = query(collection(db, 'murales'), orderBy('createdAt', 'desc'));
-    const snap = await getDocs(q);
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('/')) return url;
 
-    const data: Mural[] = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<Mural, 'id'>),
-    }));
+  return `/${url}`;
+};
 
-    const categorizedMurals: CategorizedMurals = {};
-    const videoFiles: Mural[] = [];
+export const loadMurals = async (): Promise<LoadMuralsResult> => {
+  const response = await fetch('/api/projects/1/images');
 
-    data.forEach(item => {
-      // Excluir videos. Usar mimeType si está disponible y es más preciso.
-      // Si el backend no devuelve mimeType, se puede seguir usando item.category
-      const isVideo = item.mimeType?.startsWith('video/') || normalizeCategory(item.category) === 'video';
+  const contentType = response.headers.get('content-type') || '';
 
-      if (isVideo) {
-        videoFiles.push(item);
-      } else {
-        const category = normalizeCategory(item.category);
-        if (!categorizedMurals[category]) {
-          categorizedMurals[category] = [];
-        }
-        categorizedMurals[category].push(item);
-      }
-    });
-
-    return { categorizedMurals, videoFiles };
-
-  } catch (error) {
-    console.error('Error loading murals:', error);
-    throw error; // Re-throw para que el componente que llama pueda manejarlo
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Error cargando murales: ${response.status} ${text.slice(0, 120)}`);
   }
+
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    throw new Error(`La API no devolvió JSON: ${text.slice(0, 120)}`);
+  }
+
+  const data = await response.json();
+
+  const items: Mural[] = Array.isArray(data)
+    ? data
+    : Array.isArray(data.files)
+      ? data.files
+      : Array.isArray(data.images)
+        ? data.images
+        : Array.isArray(data.data)
+          ? data.data
+          : [];
+
+  const categorizedMurals: CategorizedMurals = {};
+  const videoFiles: Mural[] = [];
+
+  items.forEach((item: any, index: number) => {
+    const mural: Mural = {
+      id: String(item.id ?? item._id ?? item.filename ?? index),
+      imageUrl: normalizeImageUrl(item.imageUrl ?? item.url ?? item.src ?? item.path),
+      category: normalizeCategory(item.category),
+      title: item.title || 'Mural sin título',
+      description: item.description || '',
+      mimeType: item.mimeType || item.mimetype || '',
+      createdAt: item.createdAt || Date.now(),
+    };
+
+    if (!mural.imageUrl) return;
+
+    const isVideo =
+      mural.mimeType?.startsWith('video/') ||
+      mural.imageUrl.match(/\.(mp4|webm|mov|avi)$/i);
+
+    if (isVideo) {
+      videoFiles.push(mural);
+      return;
+    }
+
+    const category = normalizeCategory(mural.category);
+
+    if (!categorizedMurals[category]) {
+      categorizedMurals[category] = [];
+    }
+
+    categorizedMurals[category].push(mural);
+  });
+
+  return { categorizedMurals, videoFiles };
 };

@@ -23,7 +23,7 @@ const AdminLoginForm: React.FC<AdminLoginFormProps> = ({
       return;
     }
 
-    localStorage.setItem('accessToken', 'local-admin-token');
+    localStorage.setItem('accessToken', 'admin-demo-token');
     localStorage.setItem('userRole', 'admin');
 
     setAdminPassword('');

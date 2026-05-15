@@ -56,64 +56,88 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => { /
   const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
+  
     try {
+      
+      const token = localStorage.getItem('accessToken');
+  
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', UPLOAD_PRESET);
-      formData.append('folder', `murales/${selectedUploadCategory}`);
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error?.message || 'Error al subir imagen a Cloudinary');
-      }
-
-      await addDoc(collection(db, 'murales'), {
-        imageUrl: data.secure_url,
-        cloudinaryPublicId: data.public_id,
-        category: selectedUploadCategory,
-        title: 'Nuevo Mural',
-        description: '',
-        createdAt: Date.now(),
+      formData.append('image', file);
+      formData.append('category', selectedUploadCategory);
+      formData.append('title', 'Nuevo Mural');
+      formData.append('description', '');
+  
+      const response = await fetch('http://localhost:5000/api/projects/1/images', {
+        method: 'POST',
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {},
+        body: formData,
       });
-
+  
+      const data = await response.json().catch(() => null);
+  
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            data?.errors?.[0]?.msg ||
+            'Error al subir imagen al backend'
+        );
+      }
+  
       if (galleryFileInputRef.current) {
         galleryFileInputRef.current.value = '';
       }
-
+  
       setShowGalleryUpload(false);
-      await refreshMurals(); // Usar refreshMurals
-
+      await refreshMurals();
+  
       toast.success('Mural subido correctamente 🚀');
     } catch (error) {
       console.error(error);
       toast.error(`Error al subir el mural: ${(error as Error).message}`);
     }
   };
-
+  
   const confirmDeleteMural = async () => {
-    if (!muralToDelete) return;
+  if (!muralToDelete) return;
 
-    try {
-      await deleteDoc(doc(db, 'murales', muralToDelete.id));
+  try {
+    const token = localStorage.getItem('accessToken');
 
-      toast.success('Mural eliminado de la galería');
-      setMuralToDelete(null);
-      await refreshMurals(); // Usar refreshMurals
-    } catch (error) {
-      console.error(error);
-      toast.error(`Error al eliminar el mural: ${(error as Error).message}`);
+    const response = await fetch(
+      `http://localhost:5000/api/projects/1/images/${muralToDelete.id}`,
+      {
+        method: 'DELETE',
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {},
+      }
+    );
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          data?.errors?.[0]?.msg ||
+          'Error al eliminar el mural del backend'
+      );
     }
-  };
+
+    toast.success('Mural eliminado de la galería');
+    setMuralToDelete(null);
+    await refreshMurals();
+  } catch (error) {
+    console.error(error);
+    toast.error(`Error al eliminar el mural: ${(error as Error).message}`);
+  }
+};
+ 
 
   const currentMurals = murals.filter((mural) => mural.category === activeGalleryCategory);
 
