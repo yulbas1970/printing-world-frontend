@@ -69,7 +69,7 @@ const normalizeImageUrl = (url: string | undefined): string => {
 };
 
 export const loadMurals = async (): Promise<LoadMuralsResult> => {
-  const response = await fetch('https://www.imprimiendoelmundoia.es/api/projects/1/images');
+  const response = await fetch('/api/projects/1/images');
 
   const contentType = response.headers.get('content-type') || '';
 

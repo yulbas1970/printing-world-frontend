@@ -37,8 +37,16 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => { /
 
   const refreshMurals = async () => { // Renombrado para evitar conflicto con loadMurals
     try {
-      const { categorizedMurals } = await loadMurals(); // Usar la función compartida
-      const allMurals = Object.values(categorizedMurals).flat();
+      const { categorizedMurals } = await loadMurals();
+
+      const allMurals = Object.entries(categorizedMurals).flatMap(
+        ([category, items]) =>
+          items.map((mural) => ({
+            ...mural,
+            category: mural.category || category,
+          }))
+      );
+      
       setMurals(allMurals);
       if (fetchProjectFiles) {
         fetchProjectFiles(); // Actualizar también en AdminPage
