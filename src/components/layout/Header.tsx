@@ -6,7 +6,7 @@ import { Menu, X, Palette } from 'lucide-react';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [language, setLanguage] = useState(localStorage.getItem('printingworld-language') || 'es');
-  const [companyName, setCompanyName] = useState('Printing World');
+  const [companyName, setCompanyName] = useState('IMPRIMIENDO EL MUNDO-IA');
 
   useEffect(() => {
     const fetchCompanyName = async () => {
