@@ -1,3 +1,6 @@
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../services/firebase';
+
 export interface Mural {
   id: string;
   imageUrl: string;
@@ -59,54 +62,26 @@ const normalizeCategory = (category: string | undefined): string => {
   }
 };
 
-const normalizeImageUrl = (url: string | undefined): string => {
-  if (!url) return '';
-
-  if (url.startsWith('http')) return url;
-  if (url.startsWith('/')) return url;
-
-  return `/${url}`;
-};
-
 export const loadMurals = async (): Promise<LoadMuralsResult> => {
-  const response = await fetch('/api/projects/1/images');
-
-  const contentType = response.headers.get('content-type') || '';
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Error cargando murales: ${response.status} ${text.slice(0, 120)}`);
-  }
-
-  if (!contentType.includes('application/json')) {
-    const text = await response.text();
-    throw new Error(`La API no devolvió JSON: ${text.slice(0, 120)}`);
-  }
-
-  const data = await response.json();
-
-  const items: Mural[] = Array.isArray(data)
-    ? data
-    : Array.isArray(data.files)
-      ? data.files
-      : Array.isArray(data.images)
-        ? data.images
-        : Array.isArray(data.data)
-          ? data.data
-          : [];
-
   const categorizedMurals: CategorizedMurals = {};
   const videoFiles: Mural[] = [];
 
-  items.forEach((item: any, index: number) => {
+  const muralsRef = collection(db, 'murals');
+  const q = query(muralsRef, orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(q);
+
+  snapshot.forEach((docItem) => {
+    const data = docItem.data();
+
     const mural: Mural = {
-      id: String(item.id ?? item._id ?? item.filename ?? index),
-      imageUrl: normalizeImageUrl(item.imageUrl ?? item.url ?? item.src ?? item.path),
-      category: normalizeCategory(item.category),
-      title: item.title || 'Mural sin título',
-      description: item.description || '',
-      mimeType: item.mimeType || item.mimetype || '',
-      createdAt: item.createdAt || Date.now(),
+      id: docItem.id,
+      imageUrl: data.imageUrl || '',
+      category: normalizeCategory(data.category),
+      title: data.title || 'Mural sin título',
+      description: data.description || '',
+      mimeType: data.mimeType || '',
+      cloudinaryPublicId: data.cloudinaryPublicId || '',
+      createdAt: data.createdAt || 0,
     };
 
     if (!mural.imageUrl) return;
