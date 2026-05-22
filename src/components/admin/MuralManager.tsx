@@ -2,54 +2,66 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Palette, Upload, Trash2, Edit, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { db } from '../../services/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { loadMurals, Mural, CategorizedMurals } from '../../utils/loadMurals'; // Importar loadMurals y las interfaces
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { Mural } from '../../utils/loadMurals';
 
 const CLOUD_NAME = 'dwptjttz8';
 const UPLOAD_PRESET = 'mural_upload';
 
 interface MuralManagerProps {
-  galleryMurals?: CategorizedMurals; // Usar CategorizedMurals
   fetchProjectFiles?: () => Promise<void>;
-  showDeleteConfirm?: boolean;
-  setShowDeleteConfirm?: (show: boolean) => void;
-  muralToDelete?: string | null; // Cambiado a string
-  setMuralToDelete?: (id: string | null) => void; // Cambiado a string
 }
 
-const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => { // Recibir fetchProjectFiles como prop
-  const [murals, setMurals] = useState<Mural[]>([]); // Usar la interfaz Mural
+const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
+  const [murals, setMurals] = useState<Mural[]>([]);
   const [isGalleryEditMode, setIsGalleryEditMode] = useState(false);
   const [showGalleryUpload, setShowGalleryUpload] = useState(false);
   const [activeGalleryCategory, setActiveGalleryCategory] = useState('salones');
   const [selectedUploadCategory, setSelectedUploadCategory] = useState('salones');
-  const [muralToDelete, setMuralToDelete] = useState<Mural | null>(null); // Usar la interfaz Mural
+  const [muralToDelete, setMuralToDelete] = useState<Mural | null>(null);
+
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
   const galleryCategories = [
     { id: 'salones', name: 'Salones', icon: '🛋️' },
     { id: 'cocinas', name: 'Cocinas', icon: '🍽️' },
     { id: 'infantiles', name: 'Infantiles', icon: '🧸' },
-    { id: 'banos', name: 'Baños', icon: '🛁' }, // Corregido a 'banos'
+    { id: 'banos', name: 'Baños', icon: '🛁' },
     { id: 'pasillos', name: 'Pasillos', icon: '🚶' },
-    { id: 'general', name: 'General', icon: '🌐' }, // Añadido
+    { id: 'general', name: 'General', icon: '🌐' },
   ];
 
-  const refreshMurals = async () => { // Renombrado para evitar conflicto con loadMurals
+  const refreshMurals = async () => {
     try {
-      const { categorizedMurals } = await loadMurals();
+      const q = query(collection(db, 'murals'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
 
-      const allMurals = Object.entries(categorizedMurals).flatMap(
-        ([category, items]) =>
-          items.map((mural) => ({
-            ...mural,
-            category: mural.category || category,
-          }))
-      );
-      
-      setMurals(allMurals);
+      const loadedMurals = snapshot.docs.map((document) => {
+        const data = document.data();
+
+        return {
+          id: document.id,
+          title: data.title || 'Mural',
+          description: data.description || '',
+          imageUrl: data.imageUrl || data.url || '',
+          category: data.category || 'general',
+          publicId: data.publicId || '',
+        } as Mural;
+      });
+
+      setMurals(loadedMurals);
+
       if (fetchProjectFiles) {
-        fetchProjectFiles(); // Actualizar también en AdminPage
+        await fetchProjectFiles();
       }
     } catch (error) {
       console.error(error);
@@ -64,90 +76,70 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => { /
   const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-  
+
     try {
-      
-      const token = localStorage.getItem('accessToken');
-  
       const formData = new FormData();
-      formData.append('image', file);
-      formData.append('category', selectedUploadCategory);
-      formData.append('title', 'Nuevo Mural');
-      formData.append('description', '');
-  
-      const response = await fetch('http://localhost:5000/api/projects/1/images', {
-        method: 'POST',
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : {},
-        body: formData,
-      });
-  
-      const data = await response.json().catch(() => null);
-  
-      if (!response.ok) {
+      formData.append('file', file);
+      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('folder', `murales/${selectedUploadCategory}`);
+
+      const cloudinaryResponse = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const cloudinaryData = await cloudinaryResponse.json();
+
+      if (!cloudinaryResponse.ok) {
         throw new Error(
-          data?.message ||
-            data?.errors?.[0]?.msg ||
-            'Error al subir imagen al backend'
+          cloudinaryData?.error?.message || 'Error al subir imagen a Cloudinary'
         );
       }
-  
+
+      await addDoc(collection(db, 'murals'), {
+        title: file.name.replace(/\.[^/.]+$/, ''),
+        description: '',
+        imageUrl: cloudinaryData.secure_url,
+        publicId: cloudinaryData.public_id,
+        category: selectedUploadCategory,
+        createdAt: serverTimestamp(),
+      });
+
       if (galleryFileInputRef.current) {
         galleryFileInputRef.current.value = '';
       }
-  
+
       setShowGalleryUpload(false);
       await refreshMurals();
-  
+
       toast.success('Mural subido correctamente 🚀');
     } catch (error) {
       console.error(error);
       toast.error(`Error al subir el mural: ${(error as Error).message}`);
     }
   };
-  
+
   const confirmDeleteMural = async () => {
-  if (!muralToDelete) return;
+    if (!muralToDelete?.id) return;
 
-  try {
-    const token = localStorage.getItem('accessToken');
+    try {
+      await deleteDoc(doc(db, 'murals', muralToDelete.id));
 
-    const response = await fetch(
-      `http://localhost:5000/api/projects/1/images/${muralToDelete.id}`,
-      {
-        method: 'DELETE',
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : {},
-      }
-    );
-
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      throw new Error(
-        data?.message ||
-          data?.errors?.[0]?.msg ||
-          'Error al eliminar el mural del backend'
-      );
+      toast.success('Mural eliminado de la galería');
+      setMuralToDelete(null);
+      await refreshMurals();
+    } catch (error) {
+      console.error(error);
+      toast.error(`Error al eliminar el mural: ${(error as Error).message}`);
     }
+  };
 
-    toast.success('Mural eliminado de la galería');
-    setMuralToDelete(null);
-    await refreshMurals();
-  } catch (error) {
-    console.error(error);
-    toast.error(`Error al eliminar el mural: ${(error as Error).message}`);
-  }
-};
- 
-
-  const currentMurals = murals.filter((mural) => mural.category === activeGalleryCategory);
+  const currentMurals = murals.filter(
+    (mural) => mural.category === activeGalleryCategory
+  );
 
   return (
     <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
@@ -164,7 +156,8 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => { /
         >
           {galleryCategories.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.icon} {category.name} ({murals.filter((m) => m.category === category.id).length})
+              {category.icon} {category.name} (
+              {murals.filter((m) => m.category === category.id).length})
             </option>
           ))}
         </select>
@@ -284,7 +277,9 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => { /
           <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full border border-white/30">
             <div className="text-center mb-6">
               <div className="text-4xl mb-4">⚠️</div>
-              <h3 className="text-2xl font-bold text-white mb-2">Confirmar Eliminación</h3>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Confirmar Eliminación
+              </h3>
               <p className="text-gray-300">
                 ¿Estás seguro que quieres eliminar este mural?
               </p>
@@ -313,4 +308,3 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => { /
 };
 
 export default MuralManager;
-
