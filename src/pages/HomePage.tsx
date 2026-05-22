@@ -16,7 +16,7 @@ const HomePage = () => {
       heroTitle: "¡CREE Y CREARÁS!", 
       heroSubtitle: "NOSOTROS CREIMOS Y AHORA CREAMOS TUS SUEÑOS Y LOS PLASMAMOS EN TU PARED.",
       getStarted: "Prueba el Simulador",
-      watchDemo: "Ver Demo",
+      
     }
   };
   const t = (key: string) => translations[language as keyof typeof translations][key as keyof typeof translations.en] || key;
@@ -52,12 +52,7 @@ const HomePage = () => {
                 <span>{t('getStarted')}</span>
                 <ArrowRight className="h-5 w-5" />
               </a>
-              <a 
-                href="/videos"
-                className="border-2 border-white/30 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-all"
-              >
-                {t('watchDemo')}
-              </a>
+              
             </div>
           </div>
         </div>
