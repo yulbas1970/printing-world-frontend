@@ -1,48 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Building, Download, Edit, X, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { Building, Edit, X, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { API_URL } from '../../config/api';
 
 const CompanySettingsSection: React.FC = () => {
-  const [settings, setSettings] = useState<any>({});
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedSettings, setEditedSettings] = useState<any>({});
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const getAuthHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-  });
-
-  const fetchSettings = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/company`, {
-        headers: getAuthHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch settings');
-      }
-
-      const data = await response.json();
-
-      setSettings(data);
-      setEditedSettings(data);
-
-      if (data.logoUrl) {
-        setLogoPreview(`${API_URL}${data.logoUrl}?t=${new Date().getTime()}`);
-      }
-    } catch (error) {
-      console.error('Error fetching company settings:', error);
-      toast.error('No se pudo cargar la configuración de la empresa.');
-    }
+  const defaultSettings = {
+    companyName: 'IMPRIMIENDO EL MUNDO-IA',
+    phone: '+34 123 456 789',
+    email: 'imprimiendoelmundoia@gmail.com',
+    address: 'Madrid',
+    schedule: 'Lunes - Viernes: 9:00 - 18:00',
   };
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+  const savedSettings = localStorage.getItem('companySettings');
+  const initialSettings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+
+  const [settings, setSettings] = useState(initialSettings);
+  const [editedSettings, setEditedSettings] = useState(initialSettings);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedSettings({
@@ -51,89 +25,16 @@ const CompanySettingsSection: React.FC = () => {
     });
   };
 
-  const handleSaveSettings = async () => {
-    const toastId = toast.loading('Guardando configuración...');
-
-    try {
-      const response = await fetch(`${API_URL}/api/company`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(editedSettings),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
-
-      const updatedSettings = await response.json();
-
-      setSettings(updatedSettings);
-      setEditedSettings(updatedSettings);
-      setIsEditing(false);
-
-      toast.success('Configuración guardada.', { id: toastId });
-    } catch (error) {
-      console.error('Error saving company settings:', error);
-      toast.error('Error al guardar la configuración.', { id: toastId });
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-
-      setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleLogoUpload = async () => {
-    if (!logoFile) return;
-
-    const toastId = toast.loading('Subiendo logo...');
-    const formData = new FormData();
-
-    formData.append('logo', logoFile);
-
-    try {
-      const response = await fetch(`${API_URL}/api/company/logo`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to upload logo');
-      }
-
-      const result = await response.json();
-
-      toast.success('Logo actualizado.', { id: toastId });
-
-      setLogoFile(null);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-
-      if (result.logoUrl) {
-        setLogoPreview(`${API_URL}${result.logoUrl}?t=${new Date().getTime()}`);
-      }
-    } catch (error) {
-      console.error('Error uploading logo:', error);
-      toast.error(`Error al subir el logo: ${(error as Error).message}`, {
-        id: toastId,
-      });
-    }
+  const handleSaveSettings = () => {
+    localStorage.setItem('companySettings', JSON.stringify(editedSettings));
+    setSettings(editedSettings);
+    setIsEditing(false);
+    toast.success('Configuración guardada.');
   };
 
   const handleCancelEdit = () => {
-    setIsEditing(false);
     setEditedSettings(settings);
+    setIsEditing(false);
   };
 
   return (
@@ -143,69 +44,24 @@ const CompanySettingsSection: React.FC = () => {
         Configuración de la Empresa
       </h4>
 
-      <div className="mb-6">
-        <h5 className="text-lg font-semibold mb-2">Logo de la Empresa</h5>
-
-        <div className="flex items-center gap-4">
-          {logoPreview ? (
-            <img
-              src={logoPreview}
-              alt="Logo Preview"
-              className="w-24 h-24 object-contain rounded-lg bg-black/20 p-1"
-            />
-          ) : (
-            <div className="w-24 h-24 flex items-center justify-center rounded-lg bg-black/20 text-gray-400 text-sm">
-              Sin logo
-            </div>
-          )}
-
-          <div className="flex-grow">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              ref={fileInputRef}
-              className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-600"
-            />
-
-            {logoFile && (
-              <button
-                onClick={handleLogoUpload}
-                className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2"
-              >
-                <Upload className="w-5 h-5" />
-                <span>Subir Logo Seleccionado</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
       <div className="space-y-4">
-        <h5 className="text-lg font-semibold mb-2 border-t border-white/20 pt-4">
-          Datos de la Empresa
-        </h5>
-
-        {Object.keys(editedSettings)
-          .filter((key) => key !== 'id' && key !== 'logoUrl')
-          .map((key) => (
-            <input
-              key={key}
-              type="text"
-              name={key}
-              placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
-              value={editedSettings[key] || ''}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
-              disabled={!isEditing}
-            />
-          ))}
+        {Object.keys(editedSettings).map((key) => (
+          <input
+            key={key}
+            type="text"
+            name={key}
+            value={editedSettings[key] || ''}
+            onChange={handleInputChange}
+            disabled={!isEditing}
+            className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
+          />
+        ))}
 
         {isEditing ? (
           <div className="flex gap-4 pt-4">
             <button
               onClick={handleSaveSettings}
-              className="w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
+              className="w-full py-3 rounded-lg font-semibold bg-green-600 hover:bg-green-700 text-white flex items-center justify-center space-x-2"
             >
               <Download className="w-5 h-5" />
               <span>Guardar Cambios</span>
@@ -213,7 +69,7 @@ const CompanySettingsSection: React.FC = () => {
 
             <button
               onClick={handleCancelEdit}
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2"
+              className="w-full py-3 rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white flex items-center justify-center space-x-2"
             >
               <X className="w-5 h-5" />
               <span>Cancelar</span>
@@ -222,7 +78,7 @@ const CompanySettingsSection: React.FC = () => {
         ) : (
           <button
             onClick={() => setIsEditing(true)}
-            className="w-full py-3 mt-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full py-3 mt-4 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center space-x-2"
           >
             <Edit className="w-5 h-5" />
             <span>Editar Datos</span>

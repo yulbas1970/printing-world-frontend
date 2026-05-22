@@ -2,18 +2,16 @@ import { useState, useEffect } from 'react';
 import { Home } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-
-import { API_URL } from '../config/api'; // Restaurar importación de API_URL
-
 import AdminLoginForm from '../components/admin/AdminLoginForm';
 import MuralManager from '../components/admin/MuralManager';
 import VideoManager from '../components/admin/VideoManager';
 import BackupSection from '../components/admin/BackupSection';
 import CompanySettingsSection from '../components/admin/CompanySettingsSection';
+import { db } from '../services/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 interface Mural {
-  id: number; // Restaurar a number
-  projectId: number;
+  id: string;
   imageUrl: string;
   category: string;
   title?: string;
@@ -25,7 +23,7 @@ interface CategorizedMurals {
 }
 
 interface Video {
-  id: number; // Restaurar a number
+  id: string;
   src: string;
   title: string;
   description: string;
@@ -34,13 +32,8 @@ interface Video {
 const AdminPage = () => {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(true);
-
   const [galleryMurals, setGalleryMurals] = useState<CategorizedMurals>({});
   const [videos, setVideos] = useState<Video[]>([]);
-
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [muralToDelete, setMuralToDelete] = useState<number | null>(null); // Restaurar a number | null
-
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -53,38 +46,25 @@ const AdminPage = () => {
 
   const fetchProjectFiles = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const q = query(collection(db, 'murals'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
 
-      if (!token) {
-        throw new Error('Authentication token not found.');
-      }
+      const data: Mural[] = snapshot.docs.map((document) => {
+        const item = document.data();
 
-      const url = `${API_URL}/api/projects/1/images`; // Asegurarse de que la URL comience con /api
-      console.log('fetchProjectFiles URL:', url); // Log temporal
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        return {
+          id: document.id,
+          imageUrl: item.imageUrl || item.url || '',
+          category: item.category || 'general',
+          title: item.title || 'Mural',
+          description: item.description || '',
+        };
       });
-
-      if (!response.ok) {
-        const errorText = await response.text(); // Leer el cuerpo de la respuesta como texto
-        throw new Error(`Failed to fetch project files: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const errorText = await response.text();
-        throw new Error(`Expected JSON response, but received ${contentType || 'no content type'}: ${errorText}`);
-      }
-
-      const data: Mural[] = await response.json();
 
       const categorizedMurals = data.reduce(
         (acc: CategorizedMurals, item: Mural) => {
           if (item.category !== 'video') {
-            const category = item.category || 'uncategorized';
+            const category = item.category || 'general';
 
             if (!acc[category]) {
               acc[category] = [];
@@ -113,12 +93,8 @@ const AdminPage = () => {
 
       setVideos(videoFiles);
     } catch (error) {
-      console.error('Error fetching project files:', error);
+      console.error('Error fetching project files from Firebase:', error);
       toast.error('No se pudieron cargar los archivos del proyecto.');
-
-      if (error instanceof Error && error.message.includes('token')) {
-        handleLogout();
-      }
     }
   };
 
@@ -178,14 +154,7 @@ const AdminPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
-            <MuralManager
-              galleryMurals={galleryMurals}
-              fetchProjectFiles={fetchProjectFiles}
-              showDeleteConfirm={showDeleteConfirm}
-              setShowDeleteConfirm={setShowDeleteConfirm}
-              muralToDelete={muralToDelete}
-              setMuralToDelete={setMuralToDelete}
-            />
+            <MuralManager fetchProjectFiles={fetchProjectFiles} />
 
             <VideoManager
               backendVideos={videos}
@@ -205,7 +174,9 @@ const AdminPage = () => {
               className="block bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/30 hover:border-yellow-400 transition-all duration-200"
             >
               <h4 className="text-xl font-bold mb-2">Gestión de Proyectos</h4>
-              <p className="text-gray-300">Gestiona los proyectos y sus detalles.</p>
+              <p className="text-gray-300">
+                Gestiona los proyectos y sus detalles.
+              </p>
             </Link>
           </div>
 

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
-import { API_URL } from '../config/api'; // Importar API_URL
+import { db } from '../services/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 interface Mural {
-  id: number;
-  projectId: number;
+  id: string;
   imageUrl: string;
   category: string;
   title?: string;
@@ -19,10 +19,9 @@ const GaleriaPage = () => {
   const [activeGalleryCategory, setActiveGalleryCategory] = useState('salones');
   const [selectedMuralIndex, setSelectedMuralIndex] = useState<number | null>(null);
   const [showMuralLightbox, setShowMuralLightbox] = useState(false);
-  const [galleryMurals, setGalleryMurals] = useState<CategorizedMurals>({}); // Estado para los murales de la galería
-  const [loading, setLoading] = useState(true); // Estado de carga
-  const [error, setError] = useState<string | null>(null); // Estado de error
-
+  const [galleryMurals, setGalleryMurals] = useState<CategorizedMurals>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [language] = useState(localStorage.getItem('printingworld-language') || 'es');
 
   const translations = {
@@ -33,6 +32,9 @@ const GaleriaPage = () => {
       kitchen: 'Kitchen',
       bedroom: 'Bedroom',
       kids: 'Kids Room',
+      bathroom: 'Bathroom',
+      hallway: 'Hallway',
+      general: 'General',
       noMurals: 'No murals in this category.',
       loadingMurals: 'Loading murals...',
       errorLoadingMurals: 'Error loading murals.',
@@ -44,6 +46,9 @@ const GaleriaPage = () => {
       kitchen: 'Cocinas',
       bedroom: 'Dormitorios',
       kids: 'Infantiles',
+      bathroom: 'Baños',
+      hallway: 'Pasillos',
+      general: 'General',
       noMurals: 'No hay murales en esta categoría.',
       loadingMurals: 'Cargando murales...',
       errorLoadingMurals: 'Error al cargar los murales.',
@@ -55,35 +60,42 @@ const GaleriaPage = () => {
       key as keyof typeof translations.es
     ] || key;
 
-  const [galleryCategories, setGalleryCategories] = useState<{ id: string; name: string; icon: string }[]>([]);
+  const defaultCategories = [
+    { id: 'salones', name: t('livingRoom'), icon: '🛋️' },
+    { id: 'cocinas', name: t('kitchen'), icon: '🍳' },
+    { id: 'dormitorios', name: t('bedroom'), icon: '🛏️' },
+    { id: 'infantiles', name: t('kids'), icon: '🧸' },
+    { id: 'banos', name: t('bathroom'), icon: '🛁' },
+    { id: 'pasillos', name: t('hallway'), icon: '🚶' },
+    { id: 'general', name: t('general'), icon: '🌐' },
+  ];
 
-  // Función para obtener los murales de la API
+  const [galleryCategories, setGalleryCategories] = useState(defaultCategories);
+
   const fetchGalleryMurals = async () => {
     setLoading(true);
     setError(null);
+
     try {
-      const url = `${API_URL}/api/projects/1/images`; // Asegurarse de que la URL comience con /api
-      console.log('fetchGalleryMurals URL:', url); // Log temporal
-      const response = await fetch(url); // Cambiado a /projects/1/images
+      const q = query(collection(db, 'murals'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch gallery murals: ${response.status} ${response.statusText} - ${errorText}`);
-      }
+      const data: Mural[] = snapshot.docs.map((document) => {
+        const item = document.data();
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const errorText = await response.text();
-        throw new Error(`Expected JSON response, but received ${contentType || 'no content type'}: ${errorText}`);
-      }
-
-      const data: Mural[] = await response.json();
+        return {
+          id: document.id,
+          imageUrl: item.imageUrl || item.url || '',
+          category: item.category || 'general',
+          title: item.title || 'Mural',
+          description: item.description || '',
+        };
+      });
 
       const categorizedMurals = data.reduce(
         (acc: CategorizedMurals, item: Mural) => {
-          // Asegurarse de que solo se incluyan imágenes (no videos)
           if (item.category !== 'video') {
-            const category = item.category || 'uncategorized';
+            const category = item.category || 'general';
 
             if (!acc[category]) {
               acc[category] = [];
@@ -96,32 +108,36 @@ const GaleriaPage = () => {
         },
         {}
       );
+
       setGalleryMurals(categorizedMurals);
 
-      // Generar categorías dinámicamente (simplificado)
-      const uniqueCategories = Array.from(new Set(data.filter(item => item.category !== 'video').map(item => item.category || 'uncategorized')));
-      const dynamicCategories = uniqueCategories.map(cat => {
-        let name = cat;
-        let icon = '🖼️'; // Icono por defecto
-        switch (cat) {
-          case 'salones': name = t('livingRoom'); icon = '🛋️'; break;
-          case 'cocinas': name = t('kitchen'); icon = '🍳'; break;
-          case 'dormitorios': name = t('bedroom'); icon = '🛏️'; break;
-          case 'infantiles': name = t('kids'); icon = '🧸'; break;
-          case 'uncategorized': name = 'Sin Categoría'; break; // O traducir
-        }
-        return { id: cat, name, icon };
-      });
-      setGalleryCategories(dynamicCategories);
+      const existingCategoryIds = new Set(defaultCategories.map((cat) => cat.id));
+      const extraCategories = Array.from(
+        new Set(
+          data
+            .filter((item) => item.category !== 'video')
+            .map((item) => item.category || 'general')
+        )
+      )
+        .filter((cat) => !existingCategoryIds.has(cat))
+        .map((cat) => ({
+          id: cat,
+          name: cat,
+          icon: '🖼️',
+        }));
 
-      // Establecer la categoría activa por defecto si hay alguna
-      if (dynamicCategories.length > 0 && !dynamicCategories.some(cat => cat.id === activeGalleryCategory)) {
-        setActiveGalleryCategory(dynamicCategories[0].id);
+      const finalCategories = [...defaultCategories, ...extraCategories];
+      setGalleryCategories(finalCategories);
+
+      if (
+        finalCategories.length > 0 &&
+        !finalCategories.some((cat) => cat.id === activeGalleryCategory)
+      ) {
+        setActiveGalleryCategory(finalCategories[0].id);
       }
-
-    } catch (err: any) { // Usar 'any' para el tipo de error
-      console.error('Error fetching gallery murals:', err);
-      setError(err.message || 'Error al cargar los murales.');
+    } catch (err: any) {
+      console.error('Error fetching gallery murals from Firebase:', err);
+      setError(t('errorLoadingMurals'));
     } finally {
       setLoading(false);
     }
@@ -129,7 +145,7 @@ const GaleriaPage = () => {
 
   useEffect(() => {
     fetchGalleryMurals();
-  }, []); // Cargar murales al montar el componente
+  }, []);
 
   const currentMurals = galleryMurals[activeGalleryCategory] || [];
 
@@ -172,6 +188,7 @@ const GaleriaPage = () => {
     };
 
     document.addEventListener('keydown', handleKeyPress);
+
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, [showMuralLightbox, selectedMuralIndex, activeGalleryCategory]);
 
@@ -183,6 +200,7 @@ const GaleriaPage = () => {
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               {t('galleryTitle')}
             </h2>
+
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
               {t('gallerySubtitle')}
             </p>
@@ -203,56 +221,57 @@ const GaleriaPage = () => {
                 }`}
               >
                 <span className="text-lg">{category.icon}</span>
-                <span>{category.name}</span>
+                <span>
+                  {category.name} ({galleryMurals[category.id]?.length || 0})
+                </span>
               </button>
             ))}
           </div>
 
-          {loading && <p className="text-center text-white">{t('loadingMurals')}</p>}
+          {loading && (
+            <p className="text-center text-white">{t('loadingMurals')}</p>
+          )}
+
           {error && <p className="text-center text-red-500">{error}</p>}
+
           {!loading && !error && currentMurals.length === 0 && (
-            <p className="text-center text-white">
-              {t('noMurals')}
-            </p>
+            <p className="text-center text-white">{t('noMurals')}</p>
           )}
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {!loading && !error && currentMurals.map((mural, index) => (
-              <div
-                key={mural.id}
-                className="group relative overflow-hidden rounded-2xl bg-white/15 backdrop-blur-lg hover:scale-105 transition-all duration-300 border border-white/20 cursor-pointer"
-                onClick={() => openMuralLightbox(index)}
-              >
-                {console.log('MURAL IMAGE URL ORIGINAL:', mural.imageUrl)}
-                <img
-                  src={
-                    mural.imageUrl.startsWith('http')
-                      ? mural.imageUrl
-                      : mural.imageUrl.startsWith('/uploads') || mural.imageUrl.startsWith('/images')
-                      ? mural.imageUrl
-                      : `${API_URL}${mural.imageUrl}` // Si es relativa, usar API_URL
-                  }
-                  alt={mural.title}
-                  className="w-full h-64 object-cover"
-                />
+            {!loading &&
+              !error &&
+              currentMurals.map((mural, index) => (
+                <div
+                  key={mural.id}
+                  className="group relative overflow-hidden rounded-2xl bg-white/15 backdrop-blur-lg hover:scale-105 transition-all duration-300 border border-white/20 cursor-pointer"
+                  onClick={() => openMuralLightbox(index)}
+                >
+                  <img
+                    src={mural.imageUrl}
+                    alt={mural.title || 'Mural'}
+                    className="w-full h-64 object-cover"
+                  />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute top-4 right-4 flex space-x-2">
-                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
-                      <ZoomIn className="w-5 h-5 text-white" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute top-4 right-4 flex space-x-2">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
+                        <ZoomIn className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="text-xl font-bold mb-1">{mural.title}</h3>
+                      <p className="text-yellow-400 text-sm">
+                        {mural.description}
+                      </p>
+                      <p className="text-white/70 text-xs mt-2">
+                        Clic para ver en pantalla completa
+                      </p>
                     </div>
                   </div>
-
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-xl font-bold mb-1">{mural.title}</h3>
-                    <p className="text-yellow-400 text-sm">{mural.description}</p>
-                    <p className="text-white/70 text-xs mt-2">
-                      Clic para ver en pantalla completa
-                    </p>
-                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       </section>
@@ -293,15 +312,25 @@ const GaleriaPage = () => {
               <h3 className="text-2xl font-bold mb-2 text-white">
                 {getCurrentMural()?.title}
               </h3>
+
               <p className="text-gray-300 mb-3">
                 {getCurrentMural()?.description}
               </p>
+
               <div className="flex items-center justify-center space-x-4 text-sm text-gray-400">
                 <span>
-                  {galleryCategories.find((c) => c.id === activeGalleryCategory)?.icon}{' '}
-                  {galleryCategories.find((c) => c.id === activeGalleryCategory)?.name}
+                  {
+                    galleryCategories.find((c) => c.id === activeGalleryCategory)
+                      ?.icon
+                  }{' '}
+                  {
+                    galleryCategories.find((c) => c.id === activeGalleryCategory)
+                      ?.name
+                  }
                 </span>
+
                 <span>|</span>
+
                 <span>
                   {(selectedMuralIndex || 0) + 1} de {currentMurals.length}
                 </span>
