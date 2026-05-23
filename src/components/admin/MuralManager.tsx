@@ -33,12 +33,11 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
 
   const galleryCategories = [
     { id: 'salones', name: 'Salones', icon: '🛋️' },
-    { id: 'dormitorios', name: 'Dormitorios', icon: '🛏️' },
     { id: 'cocinas', name: 'Cocinas', icon: '🍽️' },
     { id: 'infantiles', name: 'Infantiles', icon: '🧸' },
     { id: 'banos', name: 'Baños', icon: '🛁' },
     { id: 'pasillos', name: 'Pasillos', icon: '🚶' },
-    
+    { id: 'general', name: 'General', icon: '🌐' },
   ];
 
   const refreshMurals = async () => {
@@ -308,4 +307,4 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
   );
 };
 
-export default MuralManager;qq
+export default MuralManager;
