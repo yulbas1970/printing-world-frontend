@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Play, Upload, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 interface VideoManagerProps {
   backendVideos: Array<{id: number, src: string, title: string, description: string}>;
