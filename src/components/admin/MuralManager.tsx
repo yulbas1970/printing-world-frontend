@@ -34,6 +34,7 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
   const galleryCategories = [
     { id: 'salones', name: 'Salones', icon: '🛋️' },
     { id: 'cocinas', name: 'Cocinas', icon: '🍽️' },
+    { id: 'dormitorios', name: 'Dormitorios', icon: '🛏️' },
     { id: 'infantiles', name: 'Infantiles', icon: '🧸' },
     { id: 'banos', name: 'Baños', icon: '🛁' },
     { id: 'pasillos', name: 'Pasillos', icon: '🚶' },
