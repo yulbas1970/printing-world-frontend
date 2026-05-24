@@ -45,7 +45,7 @@ const HomePage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <a 
-                href="/vista-previa"
+                href="/generador"
                 className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-8 py-4 rounded-full font-bold text-lg hover:shadow-2xl transition-all transform hover:scale-105 flex items-center space-x-2"
               >
                 <Wand2 className="h-5 w-5" />

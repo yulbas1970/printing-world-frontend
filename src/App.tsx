@@ -88,6 +88,7 @@ function App() {
         <Route path="/servicios" element={<ServiciosPage />} />
         <Route path="/videos" element={<VideosPage />} />
         <Route path="/generador" element={<GeneradorPage />} />
+        <Route path="/vista-previa" element={<GeneradorPage />} />
         <Route path="/galeria" element={<GaleriaPage />} />
         <Route path="/contacto" element={<ContactoPage key={location.pathname} />} />
         <Route path="/admin" element={<AdminPage />} />
