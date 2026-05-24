@@ -11,66 +11,49 @@ interface Mural {
   description?: string;
 }
 
-interface CategorizedMurals {
-  [key: string]: Mural[];
-}
+const normalizeCategory = (category?: string) => {
+  const raw = (category || 'general').toLowerCase().trim();
+
+  const map: Record<string, string> = {
+    salon: 'salones',
+    salones: 'salones',
+    cocina: 'cocinas',
+    cocinas: 'cocinas',
+    dormitorio: 'dormitorios',
+    dormitorios: 'dormitorios',
+    infantil: 'infantiles',
+    infantiles: 'infantiles',
+    baño: 'banos',
+    baños: 'banos',
+    bano: 'banos',
+    banos: 'banos',
+    pasillo: 'pasillos',
+    pasillos: 'pasillos',
+    general: 'general',
+    otros: 'general',
+    video: 'video',
+  };
+
+  return map[raw] || raw;
+};
 
 const GaleriaPage = () => {
   const [activeGalleryCategory, setActiveGalleryCategory] = useState('salones');
   const [selectedMuralIndex, setSelectedMuralIndex] = useState<number | null>(null);
   const [showMuralLightbox, setShowMuralLightbox] = useState(false);
-  const [galleryMurals, setGalleryMurals] = useState<CategorizedMurals>({});
+  const [allMurals, setAllMurals] = useState<Mural[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [language] = useState(localStorage.getItem('printingworld-language') || 'es');
 
-  const translations = {
-    en: {
-      galleryTitle: 'Our Work Gallery',
-      gallerySubtitle: 'Explore a selection of our best projects.',
-      livingRoom: 'Living Room',
-      kitchen: 'Kitchen',
-      bedroom: 'Bedroom',
-      kids: 'Kids Room',
-      bathroom: 'Bathroom',
-      hallway: 'Hallway',
-      general: 'General',
-      noMurals: 'No murals in this category.',
-      loadingMurals: 'Loading murals...',
-      errorLoadingMurals: 'Error loading murals.',
-    },
-    es: {
-      galleryTitle: 'Galería de Trabajos',
-      gallerySubtitle: 'Explora una selección de nuestros mejores proyectos.',
-      livingRoom: 'Salones',
-      kitchen: 'Cocinas',
-      bedroom: 'Dormitorios',
-      kids: 'Infantiles',
-      bathroom: 'Baños',
-      hallway: 'Pasillos',
-      general: 'General',
-      noMurals: 'No hay murales en esta categoría.',
-      loadingMurals: 'Cargando murales...',
-      errorLoadingMurals: 'Error al cargar los murales.',
-    },
-  };
-
-  const t = (key: string) =>
-    translations[language as keyof typeof translations][
-      key as keyof typeof translations.es
-    ] || key;
-
-  const defaultCategories = [
-    { id: 'salones', name: t('livingRoom'), icon: '🛋️' },
-    { id: 'cocinas', name: t('kitchen'), icon: '🍳' },
-    { id: 'dormitorios', name: t('bedroom'), icon: '🛏️' },
-    { id: 'infantiles', name: t('kids'), icon: '🧸' },
-    { id: 'banos', name: t('bathroom'), icon: '🛁' },
-    { id: 'pasillos', name: t('hallway'), icon: '🚶' },
-    { id: 'general', name: t('general'), icon: '🌐' },
+  const galleryCategories = [
+    { id: 'salones', name: 'Salones', icon: '🛋️' },
+    { id: 'cocinas', name: 'Cocinas', icon: '🍽️' },
+    { id: 'dormitorios', name: 'Dormitorios', icon: '🛏️' },
+    { id: 'infantiles', name: 'Infantiles', icon: '🧸' },
+    { id: 'banos', name: 'Baños', icon: '🛁' },
+    { id: 'pasillos', name: 'Pasillos', icon: '🚶' },
+    { id: 'general', name: 'General', icon: '🌐' },
   ];
-
-  const [galleryCategories, setGalleryCategories] = useState(defaultCategories);
 
   const fetchGalleryMurals = async () => {
     setLoading(true);
@@ -80,64 +63,24 @@ const GaleriaPage = () => {
       const q = query(collection(db, 'murals'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
 
-      const data: Mural[] = snapshot.docs.map((document) => {
-        const item = document.data();
+      const data: Mural[] = snapshot.docs
+        .map((document) => {
+          const item = document.data();
 
-        return {
-          id: document.id,
-          imageUrl: item.imageUrl || item.url || '',
-          category: item.category || 'general',
-          title: item.title || 'Mural',
-          description: item.description || '',
-        };
-      });
+          return {
+            id: document.id,
+            imageUrl: item.imageUrl || item.url || '',
+            category: normalizeCategory(item.category),
+            title: item.title || 'Mural',
+            description: item.description || '',
+          };
+        })
+        .filter((item) => item.imageUrl && item.category !== 'video');
 
-      const categorizedMurals = data.reduce(
-        (acc: CategorizedMurals, item: Mural) => {
-          if (item.category !== 'video') {
-            const category = item.category || 'general';
-
-            if (!acc[category]) {
-              acc[category] = [];
-            }
-
-            acc[category].push(item);
-          }
-
-          return acc;
-        },
-        {}
-      );
-
-      setGalleryMurals(categorizedMurals);
-
-      const existingCategoryIds = new Set(defaultCategories.map((cat) => cat.id));
-      const extraCategories = Array.from(
-        new Set(
-          data
-            .filter((item) => item.category !== 'video')
-            .map((item) => item.category || 'general')
-        )
-      )
-        .filter((cat) => !existingCategoryIds.has(cat))
-        .map((cat) => ({
-          id: cat,
-          name: cat,
-          icon: '🖼️',
-        }));
-
-      const finalCategories = [...defaultCategories, ...extraCategories];
-      setGalleryCategories(finalCategories);
-
-      if (
-        finalCategories.length > 0 &&
-        !finalCategories.some((cat) => cat.id === activeGalleryCategory)
-      ) {
-        setActiveGalleryCategory(finalCategories[0].id);
-      }
-    } catch (err: any) {
+      setAllMurals(data);
+    } catch (err) {
       console.error('Error fetching gallery murals from Firebase:', err);
-      setError(t('errorLoadingMurals'));
+      setError('Error al cargar los murales.');
     } finally {
       setLoading(false);
     }
@@ -147,7 +90,15 @@ const GaleriaPage = () => {
     fetchGalleryMurals();
   }, []);
 
-  const currentMurals = galleryMurals[activeGalleryCategory] || [];
+  const currentMurals = allMurals.filter(
+    (mural) => normalizeCategory(mural.category) === activeGalleryCategory
+  );
+
+  const getCategoryCount = (categoryId: string) => {
+    return allMurals.filter(
+      (mural) => normalizeCategory(mural.category) === categoryId
+    ).length;
+  };
 
   const openMuralLightbox = (index: number) => {
     setSelectedMuralIndex(index);
@@ -178,31 +129,16 @@ const GaleriaPage = () => {
     return currentMurals[selectedMuralIndex] || null;
   };
 
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (!showMuralLightbox) return;
-
-      if (e.key === 'Escape') closeMuralLightbox();
-      if (e.key === 'ArrowLeft') navigateMural('prev');
-      if (e.key === 'ArrowRight') navigateMural('next');
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [showMuralLightbox, selectedMuralIndex, activeGalleryCategory]);
-
   return (
     <div>
       <section id="galeria" className="py-20 pt-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              {t('galleryTitle')}
+              Galería de Trabajos
             </h2>
-
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              {t('gallerySubtitle')}
+              Explora una selección de nuestros mejores proyectos.
             </p>
           </div>
 
@@ -221,21 +157,18 @@ const GaleriaPage = () => {
                 }`}
               >
                 <span className="text-lg">{category.icon}</span>
-                <span>
-                  {category.name} ({galleryMurals[category.id]?.length || 0})
-                </span>
+                <span>{`${category.name} (${getCategoryCount(category.id)})`}</span>
               </button>
             ))}
           </div>
 
-          {loading && (
-            <p className="text-center text-white">{t('loadingMurals')}</p>
-          )}
-
+          {loading && <p className="text-center text-white">Cargando murales...</p>}
           {error && <p className="text-center text-red-500">{error}</p>}
 
           {!loading && !error && currentMurals.length === 0 && (
-            <p className="text-center text-white">{t('noMurals')}</p>
+            <p className="text-center text-white">
+              No hay murales en esta categoría.
+            </p>
           )}
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -262,9 +195,7 @@ const GaleriaPage = () => {
 
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-xl font-bold mb-1">{mural.title}</h3>
-                      <p className="text-yellow-400 text-sm">
-                        {mural.description}
-                      </p>
+                      <p className="text-yellow-400 text-sm">{mural.description}</p>
                       <p className="text-white/70 text-xs mt-2">
                         Clic para ver en pantalla completa
                       </p>
@@ -312,25 +243,10 @@ const GaleriaPage = () => {
               <h3 className="text-2xl font-bold mb-2 text-white">
                 {getCurrentMural()?.title}
               </h3>
-
               <p className="text-gray-300 mb-3">
                 {getCurrentMural()?.description}
               </p>
-
               <div className="flex items-center justify-center space-x-4 text-sm text-gray-400">
-                <span>
-                  {
-                    galleryCategories.find((c) => c.id === activeGalleryCategory)
-                      ?.icon
-                  }{' '}
-                  {
-                    galleryCategories.find((c) => c.id === activeGalleryCategory)
-                      ?.name
-                  }
-                </span>
-
-                <span>|</span>
-
                 <span>
                   {(selectedMuralIndex || 0) + 1} de {currentMurals.length}
                 </span>
