@@ -138,7 +138,8 @@ const GaleriaPage = () => {
               Galería de Trabajos
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Explora una selección de nuestros mejores proyectos.
+              
+Explora ideas y visualizaciones de murales creados para inspirar tus espacios.
             </p>
           </div>
 
