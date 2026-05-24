@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Palette, Upload, Trash2, Edit, X } from 'lucide-react';
+import { Palette, Upload, Trash2, Edit, X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { db } from '../../services/firebase';
 import {
@@ -11,6 +11,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore';
 import { Mural } from '../../utils/loadMurals';
 
@@ -21,13 +22,46 @@ interface MuralManagerProps {
   fetchProjectFiles?: () => Promise<void>;
 }
 
+const normalizeCategory = (category?: string) => {
+  const raw = (category || 'general').toLowerCase().trim();
+
+  const map: Record<string, string> = {
+    salon: 'salones',
+    salones: 'salones',
+    cocina: 'cocinas',
+    cocinas: 'cocinas',
+    dormitorio: 'dormitorios',
+    dormitorios: 'dormitorios',
+    infantil: 'infantiles',
+    infantiles: 'infantiles',
+    baño: 'banos',
+    baños: 'banos',
+    bano: 'banos',
+    banos: 'banos',
+    pasillo: 'pasillos',
+    pasillos: 'pasillos',
+    general: 'general',
+    otros: 'general',
+    video: 'video',
+  };
+
+  return map[raw] || raw;
+};
+
 const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
   const [murals, setMurals] = useState<Mural[]>([]);
   const [isGalleryEditMode, setIsGalleryEditMode] = useState(false);
   const [showGalleryUpload, setShowGalleryUpload] = useState(false);
+
   const [activeGalleryCategory, setActiveGalleryCategory] = useState('salones');
   const [selectedUploadCategory, setSelectedUploadCategory] = useState('salones');
+
   const [muralToDelete, setMuralToDelete] = useState<Mural | null>(null);
+  const [muralToEdit, setMuralToEdit] = useState<Mural | null>(null);
+
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategory, setEditCategory] = useState('salones');
 
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,18 +80,20 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
       const q = query(collection(db, 'murals'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
 
-      const loadedMurals = snapshot.docs.map((document) => {
-        const data = document.data();
+      const loadedMurals = snapshot.docs
+        .map((document) => {
+          const data = document.data();
 
-        return {
-          id: document.id,
-          title: data.title || 'Mural',
-          description: data.description || '',
-          imageUrl: data.imageUrl || data.url || '',
-          category: data.category || 'general',
-          publicId: data.publicId || '',
-        } as Mural;
-      });
+          return {
+            id: document.id,
+            title: data.title || 'Mural',
+            description: data.description || '',
+            imageUrl: data.imageUrl || data.url || '',
+            category: normalizeCategory(data.category),
+            publicId: data.publicId || '',
+          } as Mural;
+        })
+        .filter((mural) => mural.imageUrl && mural.category !== 'video');
 
       setMurals(loadedMurals);
 
@@ -74,9 +110,23 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
     refreshMurals();
   }, []);
 
-  const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const getCategoryCount = (categoryId: string) => {
+    return murals.filter(
+      (mural) => normalizeCategory(mural.category) === categoryId
+    ).length;
+  };
+
+  const currentMurals = murals.filter(
+    (mural) => normalizeCategory(mural.category) === activeGalleryCategory
+  );
+
+  const handleGalleryUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const toastId = toast.loading('Subiendo mural...');
 
     try {
       const formData = new FormData();
@@ -116,31 +166,65 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
       setShowGalleryUpload(false);
       await refreshMurals();
 
-      toast.success('Mural subido correctamente 🚀');
+      toast.success('Mural subido correctamente 🚀', { id: toastId });
     } catch (error) {
       console.error(error);
-      toast.error(`Error al subir el mural: ${(error as Error).message}`);
+      toast.error(`Error al subir el mural: ${(error as Error).message}`, {
+        id: toastId,
+      });
+    }
+  };
+
+  const openEditMural = (mural: Mural) => {
+    setMuralToEdit(mural);
+    setEditTitle(mural.title || '');
+    setEditDescription(mural.description || '');
+    setEditCategory(normalizeCategory(mural.category));
+  };
+
+  const saveEditMural = async () => {
+    if (!muralToEdit?.id) return;
+
+    const toastId = toast.loading('Guardando cambios...');
+
+    try {
+      await updateDoc(doc(db, 'murals', muralToEdit.id), {
+        title: editTitle.trim() || 'Mural',
+        description: editDescription.trim(),
+        category: editCategory,
+      });
+
+      toast.success('Mural actualizado correctamente', { id: toastId });
+
+      setMuralToEdit(null);
+      await refreshMurals();
+    } catch (error) {
+      console.error(error);
+      toast.error(`Error al actualizar el mural: ${(error as Error).message}`, {
+        id: toastId,
+      });
     }
   };
 
   const confirmDeleteMural = async () => {
     if (!muralToDelete?.id) return;
 
+    const toastId = toast.loading('Eliminando mural...');
+
     try {
       await deleteDoc(doc(db, 'murals', muralToDelete.id));
 
-      toast.success('Mural eliminado de la galería');
+      toast.success('Mural eliminado de la galería', { id: toastId });
+
       setMuralToDelete(null);
       await refreshMurals();
     } catch (error) {
       console.error(error);
-      toast.error(`Error al eliminar el mural: ${(error as Error).message}`);
+      toast.error(`Error al eliminar el mural: ${(error as Error).message}`, {
+        id: toastId,
+      });
     }
   };
-
-  const currentMurals = murals.filter(
-    (mural) => mural.category === activeGalleryCategory
-  );
 
   return (
     <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
@@ -157,29 +241,45 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
         >
           {galleryCategories.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.icon} {category.name} (
-              {murals.filter((m) => m.category === category.id).length})
+              {category.icon} {category.name} ({getCategoryCount(category.id)})
             </option>
           ))}
         </select>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-60 overflow-y-auto">
           {currentMurals.map((mural) => (
-            <div key={mural.id} className="relative group">
+            <div
+              key={mural.id}
+              className="relative group bg-black/20 rounded-lg p-2"
+            >
               <img
                 src={mural.imageUrl}
                 alt={mural.title || 'Mural'}
                 className="w-full h-24 object-cover rounded-lg"
               />
 
+              <p className="text-xs text-white mt-2 truncate">
+                {mural.title || 'Mural'}
+              </p>
+
               {isGalleryEditMode && (
-                <button
-                  onClick={() => setMuralToDelete(mural)}
-                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Eliminar Mural"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="absolute top-1 right-1 flex gap-1">
+                  <button
+                    onClick={() => openEditMural(mural)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white p-1 rounded-full"
+                    title="Editar Mural"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => setMuralToDelete(mural)}
+                    className="bg-red-600 hover:bg-red-700 text-white p-1 rounded-full"
+                    title="Eliminar Mural"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               )}
             </div>
           ))}
@@ -197,7 +297,7 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
             className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2"
           >
             <Upload className="w-5 h-5" />
-            <span>Agregar Mural</span>
+            <span>Agregar mural</span>
           </button>
 
           <button
@@ -228,6 +328,7 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
           <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 max-w-md w-full border border-white/30">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold">Agregar Mural</h3>
+
               <button
                 onClick={() => setShowGalleryUpload(false)}
                 className="hover:bg-white/20 p-2 rounded-full"
@@ -273,14 +374,76 @@ const MuralManager: React.FC<MuralManagerProps> = ({ fetchProjectFiles }) => {
         </div>
       )}
 
+      {muralToEdit && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
+          <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 max-w-md w-full border border-white/30">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold">Editar Mural</h3>
+
+              <button
+                onClick={() => setMuralToEdit(null)}
+                className="hover:bg-white/20 p-2 rounded-full"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <img
+                src={muralToEdit.imageUrl}
+                alt={muralToEdit.title || 'Mural'}
+                className="w-full h-40 object-cover rounded-lg"
+              />
+
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Título del mural"
+                className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+              />
+
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Descripción del mural"
+                rows={3}
+                className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-yellow-400 resize-none"
+              />
+
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+                className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+              >
+                {galleryCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.icon} {category.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                onClick={saveEditMural}
+                className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black py-3 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center space-x-2"
+              >
+                <Save className="w-5 h-5" />
+                <span>Guardar Cambios</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {muralToDelete && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[300] flex items-center justify-center p-4">
           <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full border border-white/30">
             <div className="text-center mb-6">
               <div className="text-4xl mb-4">⚠️</div>
+
               <h3 className="text-2xl font-bold text-white mb-2">
                 Confirmar Eliminación
               </h3>
+
               <p className="text-gray-300">
                 ¿Estás seguro que quieres eliminar este mural?
               </p>
