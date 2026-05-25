@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminLoginForm from '../components/admin/AdminLoginForm';
 import MuralManager from '../components/admin/MuralManager';
+import PreviewMuralManager from '../components/admin/PreviewMuralManager';
 import VideoManager from '../components/admin/VideoManager';
 import BackupSection from '../components/admin/BackupSection';
 import CompanySettingsSection from '../components/admin/CompanySettingsSection';
@@ -51,7 +52,6 @@ const AdminPage = () => {
 
       const data: Mural[] = snapshot.docs.map((document) => {
         const item = document.data();
-
         return {
           id: document.id,
           imageUrl: item.imageUrl || item.url || '',
@@ -65,14 +65,9 @@ const AdminPage = () => {
         (acc: CategorizedMurals, item: Mural) => {
           if (item.category !== 'video') {
             const category = item.category || 'general';
-
-            if (!acc[category]) {
-              acc[category] = [];
-            }
-
+            if (!acc[category]) acc[category] = [];
             acc[category].push(item);
           }
-
           return acc;
         },
         {}
@@ -104,7 +99,6 @@ const AdminPage = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-
     if (token) {
       setIsAdminMode(true);
       setShowAdminLogin(false);
@@ -155,6 +149,8 @@ const AdminPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
             <MuralManager fetchProjectFiles={fetchProjectFiles} />
+
+            <PreviewMuralManager />
 
             <VideoManager
               backendVideos={videos}

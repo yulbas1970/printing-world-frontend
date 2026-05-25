@@ -30,6 +30,7 @@ const GeneradorPage = () => {
   const [opacity, setOpacity] = useState(0.85);
   const [blendMode, setBlendMode] = useState('multiply');
   const [isDownloading, setIsDownloading] = useState(false);
+
   const [galleryMurals, setGalleryMurals] = useState<
     Array<{ id: string; imageUrl: string; title?: string }>
   >([]);
@@ -102,7 +103,11 @@ const GeneradorPage = () => {
   useEffect(() => {
     const fetchMurals = async () => {
       try {
-        const q = query(collection(db, 'murals'), orderBy('createdAt', 'desc'));
+        const q = query(
+          collection(db, 'previewMurals'),
+          orderBy('createdAt', 'desc')
+        );
+
         const snapshot = await getDocs(q);
 
         const muralsFromFirebase = snapshot.docs
@@ -112,7 +117,7 @@ const GeneradorPage = () => {
             return {
               id: document.id,
               imageUrl: item.imageUrl || item.url || '',
-              title: item.title || 'Mural',
+              title: item.title || 'Mural para vista previa',
             };
           })
           .filter((mural) => mural.imageUrl);
@@ -128,6 +133,7 @@ const GeneradorPage = () => {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+
     if (!file) return;
 
     const reader = new FileReader();
@@ -146,6 +152,7 @@ const GeneradorPage = () => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
+
     if (!file) return;
 
     const reader = new FileReader();
@@ -170,6 +177,7 @@ const GeneradorPage = () => {
 
   useEffect(() => {
     const container = containerRef.current;
+
     if (!container) return;
 
     const updateSize = () => {
@@ -212,6 +220,7 @@ const GeneradorPage = () => {
 
   const handleDownload = () => {
     const stage = stageRef.current;
+
     if (!stage) return;
 
     setIsDownloading(true);
@@ -302,26 +311,33 @@ const GeneradorPage = () => {
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2">
-                  {galleryMurals.map((mural) => (
-                    <div
-                      key={mural.id}
-                      onClick={() => handleMuralSelect(mural.imageUrl)}
-                      className={`rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                        !isCustomMural && selectedMural === mural.imageUrl
-                          ? 'border-yellow-400'
-                          : 'border-transparent hover:border-white/50'
-                      }`}
-                    >
-                      <img
-                        src={mural.imageUrl}
-                        alt={mural.title || 'Mural'}
-                        className="w-full h-24 object-cover"
-                      />
-                      <p className="text-xs text-center bg-black/30 p-1">
-                        {mural.title || 'Mural'}
-                      </p>
-                    </div>
-                  ))}
+                  {galleryMurals.length === 0 ? (
+                    <p className="col-span-2 text-gray-400 text-sm">
+                      Todavía no hay murales disponibles para vista previa.
+                    </p>
+                  ) : (
+                    galleryMurals.map((mural) => (
+                      <div
+                        key={mural.id}
+                        onClick={() => handleMuralSelect(mural.imageUrl)}
+                        className={`rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                          !isCustomMural && selectedMural === mural.imageUrl
+                            ? 'border-yellow-400'
+                            : 'border-transparent hover:border-white/50'
+                        }`}
+                      >
+                        <img
+                          src={mural.imageUrl}
+                          alt={mural.title || 'Mural'}
+                          className="w-full h-24 object-cover"
+                        />
+
+                        <p className="text-xs text-center bg-black/30 p-1">
+                          {mural.title || 'Mural'}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <div className="relative flex py-5 items-center">
