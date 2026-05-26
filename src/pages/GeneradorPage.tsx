@@ -25,9 +25,7 @@ const GeneradorPage = () => {
   const [selectedMural, setSelectedMural] = useState<string | null>(null);
   const [isCustomMural, setIsCustomMural] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-
   const [opacity, setOpacity] = useState(0.85);
-
   const [isDownloading, setIsDownloading] = useState(false);
 
   const [galleryMurals, setGalleryMurals] = useState<
@@ -36,7 +34,6 @@ const GeneradorPage = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const muralFileInputRef = useRef<HTMLInputElement>(null);
-
   const stageRef = useRef<Konva.Stage>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +71,6 @@ const GeneradorPage = () => {
       downloading: 'Downloading...',
       manualAdjustments: 'Drag the corners to fit the mural on the wall',
     },
-
     es: {
       toolTitle: 'Visualizador de Murales',
       toolSubtitle:
@@ -218,36 +214,50 @@ const GeneradorPage = () => {
     [points]
   );
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const stage = stageRef.current;
 
     if (!stage) return;
 
-    setIsDownloading(true);
+    try {
+      setIsDownloading(true);
 
-    const controlPoints = stage.find('.control-point');
+      const controlPoints = stage.find('.control-point');
+      controlPoints.forEach((point) => point.visible(false));
+      stage.batchDraw();
 
-    controlPoints.forEach((point) => point.visible(false));
+      const dataURL = stage.toDataURL({
+        mimeType: 'image/png',
+        quality: 1,
+        pixelRatio: 2,
+      });
 
-    stage.batchDraw();
+      controlPoints.forEach((point) => point.visible(true));
+      stage.batchDraw();
 
-    const dataURL = stage.toDataURL({
-      mimeType: 'image/png',
-      quality: 1,
-      pixelRatio: 2,
-    });
+      const response = await fetch(dataURL);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
 
-    controlPoints.forEach((point) => point.visible(true));
+      const now = new Date();
+      const fileName = `mural-preview-${now.getFullYear()}-${
+        now.getMonth() + 1
+      }-${now.getDate()}-${now.getHours()}-${now.getMinutes()}.png`;
 
-    stage.batchDraw();
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
 
-    const link = document.createElement('a');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-    link.download = 'mural-visualizer-preview.png';
-    link.href = dataURL;
-    link.click();
-
-    setIsDownloading(false);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error descargando imagen:', error);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const box = getMuralBoundingBox(points);
@@ -265,9 +275,7 @@ const GeneradorPage = () => {
               {t('toolSubtitle')}
             </p>
 
-            <p className="mt-2 text-sm text-gray-500">
-              {t('disclaimer')}
-            </p>
+            <p className="mt-2 text-sm text-gray-500">{t('disclaimer')}</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
@@ -292,10 +300,7 @@ const GeneradorPage = () => {
                     <div>
                       <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
                       <p>{t('uploadOrDrag')}</p>
-
-                      <p className="text-xs text-gray-400">
-                        PNG, JPG, WEBP
-                      </p>
+                      <p className="text-xs text-gray-400">PNG, JPG, WEBP</p>
                     </div>
                   )}
                 </div>
@@ -326,8 +331,7 @@ const GeneradorPage = () => {
                         key={mural.id}
                         onClick={() => handleMuralSelect(mural.imageUrl)}
                         className={`rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                          !isCustomMural &&
-                          selectedMural === mural.imageUrl
+                          !isCustomMural && selectedMural === mural.imageUrl
                             ? 'border-yellow-400'
                             : 'border-transparent hover:border-white/50'
                         }`}
@@ -403,18 +407,16 @@ const GeneradorPage = () => {
                           />
                         )}
 
-                        {showPreview &&
-                          selectedMural &&
-                          muralImage && (
-                            <KonvaImage
-                              image={muralImage}
-                              x={box.x}
-                              y={box.y}
-                              width={box.width}
-                              height={box.height}
-                              opacity={opacity}
-                            />
-                          )}
+                        {showPreview && selectedMural && muralImage && (
+                          <KonvaImage
+                            image={muralImage}
+                            x={box.x}
+                            y={box.y}
+                            width={box.width}
+                            height={box.height}
+                            opacity={opacity}
+                          />
+                        )}
 
                         {showPreview &&
                           points.map((point, index) => (
@@ -444,9 +446,7 @@ const GeneradorPage = () => {
                       </p>
 
                       <div>
-                        <label className="block mb-2">
-                          {t('opacity')}
-                        </label>
+                        <label className="block mb-2">{t('opacity')}</label>
 
                         <input
                           type="range"
@@ -480,9 +480,7 @@ const GeneradorPage = () => {
                   <div className="text-center text-gray-500">
                     <ImageIcon className="h-20 w-20 mx-auto mb-4 opacity-50" />
 
-                    <p className="text-lg">
-                      {t('uploadSpace')}
-                    </p>
+                    <p className="text-lg">{t('uploadSpace')}</p>
                   </div>
                 </div>
               )}
