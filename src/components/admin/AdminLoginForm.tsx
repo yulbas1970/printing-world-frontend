@@ -15,7 +15,7 @@ const AdminLoginForm: React.FC<AdminLoginFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
 
   const handleAdminLogin = async () => {
-    const PASSWORD = 'admin123';
+    const PASSWORD = 'juliobascuena';
 
     if (adminPassword !== PASSWORD) {
       toast.error('Contraseña incorrecta');
