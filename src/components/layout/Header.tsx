@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const [language, setLanguage] = useState(
     localStorage.getItem('printingworld-language') || 'es'
   );
@@ -27,6 +28,7 @@ const Header = () => {
       admin: 'Admin',
       languageSelector: 'Language',
     },
+
     es: {
       home: 'Inicio',
       services: 'Servicios',
@@ -68,31 +70,52 @@ const Header = () => {
           </Link>
 
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-white hover:text-yellow-400 transition-colors">
+            <Link
+              to="/"
+              className="text-white hover:text-yellow-400 transition-colors"
+            >
               {t('home')}
             </Link>
 
-            <Link to="/servicios" className="text-white hover:text-yellow-400 transition-colors">
+            <Link
+              to="/servicios"
+              className="text-white hover:text-yellow-400 transition-colors"
+            >
               {t('services')}
             </Link>
 
-            <Link to="/videos" className="text-white hover:text-yellow-400 transition-colors">
+            <Link
+              to="/videos"
+              className="text-white hover:text-yellow-400 transition-colors"
+            >
               {t('videos')}
             </Link>
 
-            <Link to="/generador" className="text-white hover:text-yellow-400 transition-colors">
+            <Link
+              to="/generador"
+              className="text-white hover:text-yellow-400 transition-colors"
+            >
               {t('previewTool')}
             </Link>
 
-            <Link to="/galeria" className="text-white hover:text-yellow-400 transition-colors">
+            <Link
+              to="/galeria"
+              className="text-white hover:text-yellow-400 transition-colors"
+            >
               {t('gallery')}
             </Link>
 
-            <Link to="/contacto" className="text-white hover:text-yellow-400 transition-colors">
+            <Link
+              to="/contacto"
+              className="text-white hover:text-yellow-400 transition-colors"
+            >
               {t('contact')}
             </Link>
 
-            <Link to="/admin" className="text-white hover:text-yellow-400 transition-colors">
+            <Link
+              to="/admin"
+              className="text-white hover:text-yellow-400 transition-colors"
+            >
               {t('admin')}
             </Link>
 
@@ -103,10 +126,17 @@ const Header = () => {
                 className="bg-gradient-to-r from-yellow-400/20 to-orange-400/20 backdrop-blur border border-yellow-400/50 rounded-lg px-4 py-3 text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400 hover:from-yellow-400/30 hover:to-orange-400/30 transition-all cursor-pointer min-w-[100px] shadow-lg"
                 title={t('languageSelector')}
               >
-                <option value="en" className="bg-gray-800 text-white font-semibold">
+                <option
+                  value="en"
+                  className="bg-gray-800 text-white font-semibold"
+                >
                   🇺🇸 English
                 </option>
-                <option value="es" className="bg-gray-800 text-white font-semibold">
+
+                <option
+                  value="es"
+                  className="bg-gray-800 text-white font-semibold"
+                >
                   🇪🇸 Español
                 </option>
               </select>
@@ -117,38 +147,70 @@ const Header = () => {
             className="md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? (
+              <X className="h-6 w-6 text-yellow-400 hover:text-yellow-300 transition-colors" />
+            ) : (
+              <Menu className="h-6 w-6 text-yellow-400 hover:text-yellow-300 transition-colors" />
+            )}
           </button>
         </div>
 
         {isMenuOpen && (
           <nav className="md:hidden mt-4 pb-4 border-t border-white/20 pt-4">
             <div className="flex flex-col space-y-4">
-              <Link to="/" className="text-white hover:text-yellow-400 transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link
+                to="/"
+                className="text-white hover:text-yellow-400 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 {t('home')}
               </Link>
 
-              <Link to="/servicios" className="text-white hover:text-yellow-400 transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link
+                to="/servicios"
+                className="text-white hover:text-yellow-400 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 {t('services')}
               </Link>
 
-              <Link to="/videos" className="text-white hover:text-yellow-400 transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link
+                to="/videos"
+                className="text-white hover:text-yellow-400 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 {t('videos')}
               </Link>
 
-              <Link to="/generador" className="text-white hover:text-yellow-400 transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link
+                to="/generador"
+                className="text-white hover:text-yellow-400 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 {t('previewTool')}
               </Link>
 
-              <Link to="/galeria" className="text-white hover:text-yellow-400 transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link
+                to="/galeria"
+                className="text-white hover:text-yellow-400 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 {t('gallery')}
               </Link>
 
-              <Link to="/contacto" className="text-white hover:text-yellow-400 transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link
+                to="/contacto"
+                className="text-white hover:text-yellow-400 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 {t('contact')}
               </Link>
 
-              <Link to="/admin" className="text-white hover:text-yellow-400 transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link
+                to="/admin"
+                className="text-white hover:text-yellow-400 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 {t('admin')}
               </Link>
             </div>
