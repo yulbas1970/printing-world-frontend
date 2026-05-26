@@ -6,8 +6,6 @@ import Konva from 'konva';
 import { db } from '../services/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
-const blendModes = ['multiply', 'overlay', 'normal', 'screen', 'soft-light'];
-
 const getMuralBoundingBox = (points: { x: number; y: number }[]) => {
   const minX = Math.min(...points.map((p) => p.x));
   const maxX = Math.max(...points.map((p) => p.x));
@@ -27,8 +25,9 @@ const GeneradorPage = () => {
   const [selectedMural, setSelectedMural] = useState<string | null>(null);
   const [isCustomMural, setIsCustomMural] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
   const [opacity, setOpacity] = useState(0.85);
-  const [blendMode, setBlendMode] = useState('multiply');
+
   const [isDownloading, setIsDownloading] = useState(false);
 
   const [galleryMurals, setGalleryMurals] = useState<
@@ -37,6 +36,7 @@ const GeneradorPage = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const muralFileInputRef = useRef<HTMLInputElement>(null);
+
   const stageRef = useRef<Konva.Stage>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -70,11 +70,11 @@ const GeneradorPage = () => {
       or: 'or',
       previewArea: 'Preview Area',
       opacity: 'Opacity',
-      blendMode: 'Blend Mode',
       downloadMural: 'Download Preview',
       downloading: 'Downloading...',
       manualAdjustments: 'Drag the corners to fit the mural on the wall',
     },
+
     es: {
       toolTitle: 'Visualizador de Murales',
       toolSubtitle:
@@ -88,10 +88,10 @@ const GeneradorPage = () => {
       or: 'o',
       previewArea: 'Área de Visualización',
       opacity: 'Opacidad',
-      blendMode: 'Modo de Fusión',
       downloadMural: 'Descargar Vista Previa',
       downloading: 'Descargando...',
-      manualAdjustments: 'Arrastra las esquinas para ajustar el mural a la pared',
+      manualAdjustments:
+        'Arrastra las esquinas para ajustar el mural a la pared',
     },
   };
 
@@ -226,7 +226,9 @@ const GeneradorPage = () => {
     setIsDownloading(true);
 
     const controlPoints = stage.find('.control-point');
+
     controlPoints.forEach((point) => point.visible(false));
+
     stage.batchDraw();
 
     const dataURL = stage.toDataURL({
@@ -236,9 +238,11 @@ const GeneradorPage = () => {
     });
 
     controlPoints.forEach((point) => point.visible(true));
+
     stage.batchDraw();
 
     const link = document.createElement('a');
+
     link.download = 'mural-visualizer-preview.png';
     link.href = dataURL;
     link.click();
@@ -288,6 +292,7 @@ const GeneradorPage = () => {
                     <div>
                       <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
                       <p>{t('uploadOrDrag')}</p>
+
                       <p className="text-xs text-gray-400">
                         PNG, JPG, WEBP
                       </p>
@@ -321,7 +326,8 @@ const GeneradorPage = () => {
                         key={mural.id}
                         onClick={() => handleMuralSelect(mural.imageUrl)}
                         className={`rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                          !isCustomMural && selectedMural === mural.imageUrl
+                          !isCustomMural &&
+                          selectedMural === mural.imageUrl
                             ? 'border-yellow-400'
                             : 'border-transparent hover:border-white/50'
                         }`}
@@ -342,9 +348,11 @@ const GeneradorPage = () => {
 
                 <div className="relative flex py-5 items-center">
                   <div className="flex-grow border-t border-gray-600" />
+
                   <span className="flex-shrink mx-4 text-gray-400 text-sm">
                     {t('or')}
                   </span>
+
                   <div className="flex-grow border-t border-gray-600" />
                 </div>
 
@@ -395,17 +403,18 @@ const GeneradorPage = () => {
                           />
                         )}
 
-                        {showPreview && selectedMural && muralImage && (
-                          <KonvaImage
-                            image={muralImage}
-                            x={box.x}
-                            y={box.y}
-                            width={box.width}
-                            height={box.height}
-                            opacity={opacity}
-                            globalCompositeOperation={blendMode as any}
-                          />
-                        )}
+                        {showPreview &&
+                          selectedMural &&
+                          muralImage && (
+                            <KonvaImage
+                              image={muralImage}
+                              x={box.x}
+                              y={box.y}
+                              width={box.width}
+                              height={box.height}
+                              opacity={opacity}
+                            />
+                          )}
 
                         {showPreview &&
                           points.map((point, index) => (
@@ -435,7 +444,10 @@ const GeneradorPage = () => {
                       </p>
 
                       <div>
-                        <label className="block mb-2">{t('opacity')}</label>
+                        <label className="block mb-2">
+                          {t('opacity')}
+                        </label>
+
                         <input
                           type="range"
                           min="0"
@@ -449,27 +461,13 @@ const GeneradorPage = () => {
                         />
                       </div>
 
-                      <div>
-                        <label className="block mb-2">{t('blendMode')}</label>
-                        <select
-                          value={blendMode}
-                          onChange={(e) => setBlendMode(e.target.value)}
-                          className="w-full p-3 rounded-lg bg-gray-800 border border-white/20"
-                        >
-                          {blendModes.map((mode) => (
-                            <option key={mode} value={mode}>
-                              {mode}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
                       <button
                         onClick={handleDownload}
                         disabled={isDownloading}
                         className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black py-3 rounded-lg font-bold flex items-center justify-center gap-2"
                       >
                         <Download className="h-5 w-5" />
+
                         {isDownloading
                           ? t('downloading')
                           : t('downloadMural')}
@@ -478,8 +476,14 @@ const GeneradorPage = () => {
                   )}
                 </>
               ) : (
-                <div className="w-full aspect-[4/3] bg-black/40 rounded-lg flex items-center justify-center text-gray-500 text-center p-8">
-                  {t('uploadSpace')}
+                <div className="h-full flex items-center justify-center border-2 border-dashed border-white/20 rounded-2xl min-h-[500px]">
+                  <div className="text-center text-gray-500">
+                    <ImageIcon className="h-20 w-20 mx-auto mb-4 opacity-50" />
+
+                    <p className="text-lg">
+                      {t('uploadSpace')}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
